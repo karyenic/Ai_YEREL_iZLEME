@@ -1,0 +1,113 @@
+# ==================== Python ====================
+__pycache__/
+*.py[cod]
+*.class
+*.egg-info/
+.pytest_cache/
+
+# ==================== Virtual environments ====================
+.venv/
+venv/
+env/
+ENV/
+
+# ==================== IDE ====================
+.vscode/
+.idea/
+.gk_studio/
+*.swp
+*~
+
+# ==================== Local databases ====================
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+
+# ==================== Local data ====================
+Data/
+data/
+*.xlsx
+*.xls
+*.xlsm
+
+# ==================== Backups ====================
+*.bak
+*.bak_*
+*.bak2_*
+*.backup
+*.yedek*
+*.yedek2*
+*_PARCA_*.txt
+*_BACKUP*
+BACKUP_*/
+backup_*/
+_BACKUP_BEFORE_GITHUB_RESET/
+_GITHUB_TEMP/
+
+duzelt_*.py
+tespit.py
+
+# ==================== Gecici dosyalar ====================
+*.tmp
+Yeni Metin Belgesi.txt
+DOSYALAR.txt
+TUM_KODLAR*.txt
+*backup*
+*BACKUP*
+
+# ==================== Logs ====================
+*.log
+logs/
+
+# ==================== Environment / secrets ====================
+.env
+.env.*
+!.env.example
+
+# ==================== OS ====================
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Yedek dosyalar (genel)
+*yedek*
+*yedek
+
+
+# AI teshis raporlari - yerel kalir
+raporlar/
+
+
+
+# AI teshis raporlari - yerel kalir
+raporlar/
+
+# Kisisel araclar
+AraÃ§lar/
+araclar/
+KAPSUL_URET*.ps1
+
+cebe_*.txt
+Modeller/*.gguf
+Modeller/Modelfile*
+
+# Yerel arac/diagnostik betikleri - git'e GIRMESIN
+Araçlar/
+
+
+# AI sohbet manifestleri - yerel
+deep_ai_sohbet/
+AUDIT_RAPORLARI/
+Araçlar/
+
+# v15 - yerel dosyalar
+scan_chat_perf_v15.py
+# --- v18 repo gÃ¼venliÄŸi ---
+*.pyc
+
+# v18 - aday verisi iceren export'lar
+static/*.html
+static/LinkedIn*

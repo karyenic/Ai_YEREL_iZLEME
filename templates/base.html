@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}LinkedIn Takip{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<nav class="topbar">
+  <div class="brand">📊 LinkedIn Takip Asistanı</div>
+<div class="links">
+
+    <a href="/" class="nav-btn btn-nav-adaylar">Adaylar</a>
+    <a href="/chat" class="nav-btn btn-nav-ai">AI Asistan</a>
+    <a href="/metrics" class="nav-btn btn-nav-raporlama">Raporlama</a>
+    <a href="/api/excel/export" class="btn-export">⬇ Excel İndir</a>
+
+    <button onclick="yazdirmaModu()" class="btn-yazdir nav-btn" title="Yazdır (Ctrl+P)">
+      🖨️ Yazdır
+    </button>
+
+    <a href="/api/word/export" class="btn-word" title="Word olarak indir">
+      📄 Word
+    </a>
+
+    <span id="cpu-badge" class="pill pill-mini">CPU --%</span>
+    <span id="gpu-badge" class="pill pill-mini">GPU --</span>
+    <span id="ollama-pill" class="pill pill-warn">⏳ Ollama</span>
+
+    <button id="theme-toggle" class="theme-toggle" onclick="temaDegistir()" title="Tema değiştir">
+      🌙
+    </button>
+
+    <button onclick="sistemKapat()" class="btn-cikis nav-btn">
+      🔴 ÇIKIŞ
+    </button>
+
+  </div>
+</nav>
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
+</body>
+</html>

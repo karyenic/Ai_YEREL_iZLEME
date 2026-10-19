@@ -1,0 +1,340 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Adaylar{% endblock %}
+
+{% block content %}
+
+<!-- Yazdırma başlığı (sadece yazdırınca görünür) -->
+<div class="print-baslik">
+  <h1>LinkedIn Takip - Aday Listesi</h1>
+  <div class="print-tarih" id="print-tarih"></div>
+</div>
+
+<section class="panel print-gizle">
+  <h2>Yeni Aday Ekle</h2>
+
+  <div class="yeni-aday-grid">
+    <input id="isim" placeholder="İsim*" class="ya-isim">
+    <input id="linkedin-url" placeholder="🔗 LinkedIn URL (opsiyonel)" class="ya-url">
+    <select id="yeni-aday-durum" class="ya-durum" title="Başlangıç Statüsü">
+      <option value="⚪ Değerlendirilecek">⚪ Değerlendirilecek</option>
+      <option value="🟢 Aktif">🟢 Aktif</option>
+      <option value="🔥 Sıcak">🔥 Sıcak</option>
+    </select>
+    <button onclick="adayEkle()" class="btn-ekle" type="button">✅ Ekle</button>
+    <button onclick="keepModalAc()" class="btn-keep" type="button">📱 Keep'ten Aktar</button>
+    <button onclick="excelIceAktar()" class="btn-excel-ice" type="button">📥 Excel İçe Aktar</button>
+    <input id="aciklama" placeholder="Açıklama (opsiyonel)" class="ya-aciklama">
+  </div>
+</section>
+
+
+<section class="panel">
+
+<div class="aday-listesi-header">
+  <h2>
+    Aday Listesi
+    <span id="watcher-not" class="muted"></span>
+  </h2>
+  <div class="aday-listesi-arac">
+    <input
+      id="aday-ara"
+      type="text"
+      placeholder="Ara: isim, açıklama, tarih..."
+      oninput="adayAra()"
+    >
+    <span class="aday-ara-hint">💡 Kartı görmek için satıra tıklayın</span>
+  </div>
+</div>
+
+
+  <div class="table-scroll">
+    <table id="aday-tablo">
+
+            <thead>
+        <tr>
+          <th onclick="sirala('id')" style="cursor:pointer; width:60px;" title="Sırala">ID</th>
+          <th onclick="sirala('isim')" style="cursor:pointer;" title="Sırala">İsim</th>
+          <th onclick="sirala('tarih')" style="cursor:pointer; width:120px;" title="Sırala">Kayıt Tarihi</th>
+          <th onclick="sirala('aciklama')" style="cursor:pointer;" title="Sırala">Açıklama</th>
+          <th style="text-align:right; width:90px;">İşlem</th>
+        </tr>
+      </thead>
+
+      <tbody></tbody>
+
+    </table>
+  </div>
+  
+</section>
+
+
+<!-- ======================================================
+     ADAY KARTI MODAL
+     ====================================================== -->
+
+<div id="aday-modal" class="modal-overlay hidden">
+
+  <div class="aday-modal">
+
+    <div class="aday-modal-header">
+
+      <div>
+        <div class="aday-modal-kucuk-baslik">ADAY KARTI</div>
+        <h2 id="kart-isim">Aday</h2>
+
+        <span id="kart-durum" class="durum-badge">
+          🟢 Aktif
+        </span>
+      </div>
+
+      <button
+        class="modal-close"
+        onclick="adayKartiKapat()"
+        title="Kapat"
+      >
+        ✕
+      </button>
+
+    </div>
+
+
+    <div class="aday-kart-grid">
+
+      <div class="aday-bilgi-panel">
+
+        <h3>İletişim Bilgileri</h3>
+
+        <label>LinkedIn</label>
+        <div id="kart-linkedin-wrapper" style="margin-bottom:12px;">
+          <input
+            id="kart-linkedin-input"
+            type="text"
+            placeholder="https://linkedin.com/in/kullanici-adi"
+            style="width:100%; padding:10px; background:#0d1117; color:#c9d1d9; border:1px solid #30363d; border-radius:6px; font-size:14px; margin-bottom:8px;"
+          >
+          <div style="display:flex; gap:8px; align-items:center;">
+            <a id="kart-linkedin-link" href="#" target="_blank" style="color:#58a6ff; text-decoration:none; font-size:13px; display:none; padding:6px 10px; background:#1f6feb22; border:1px solid #1f6feb66; border-radius:6px;">🔗 Aç</a>
+            <button
+              type="button"
+              onclick="linkedinUrlKaydet()"
+              style="background:#238636; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:600;"
+            >
+              💾 LinkedIn Kaydet
+            </button>
+          </div>
+          <div id="kart-linkedin-yok" style="color:#8b949e; font-size:12px; margin-top:6px;">Henüz LinkedIn URL eklenmemiş</div>
+        </div>
+
+        <label>Telefon</label>
+        <input
+          id="kart-telefon"
+          type="text"
+          placeholder="Telefon"
+        >
+
+        <label>E-posta</label>
+        <input
+          id="kart-email"
+          type="email"
+          placeholder="E-posta"
+        >
+
+        <label>Adres</label>
+        <textarea
+          id="kart-adres"
+          placeholder="Adres"
+          rows="4"
+        ></textarea>
+
+        <button
+          class="btn-blue"
+          onclick="adayProfilKaydet()"
+        >
+          💾 Bilgileri Kaydet
+        </button>
+
+      </div>
+
+
+      <div class="aday-gecmis-panel">
+
+        <div class="gecmis-baslik-satiri">
+
+          <h3>Geçmiş</h3>
+
+          <button
+            class="btn-green"
+            onclick="gelismeFormuAc()"
+          >
+            ＋ GELİŞME EKLE
+          </button>
+
+        </div>
+
+        <div
+          id="aday-gecmis"
+          class="aday-gecmis"
+        ></div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================
+     GELİŞME FORMU
+     ================================================== -->
+
+<div
+  id="gelisme-formu"
+  class="gelisme-form hidden"
+>
+
+  <div class="gelisme-form-header">
+    <h3>Yeni Gelişme</h3>
+
+    <button
+      class="mini-close"
+      onclick="gelismeFormuKapat()"
+    >
+      ✕
+    </button>
+  </div>
+
+  <div class="gelisme-form-grid">
+
+    <!-- Satır 1: Tarih | Olay Tipi | Durum -->
+    <div>
+      <label>Tarih</label>
+      <input id="gelisme-tarih" type="date">
+    </div>
+
+    <div>
+      <label>Olay Tipi</label>
+      <select id="gelisme-tip" onchange="otomatikStatuBelirle()">
+        <option value="Not">📝 Not / Mesaj</option>
+        <option value="Davet">📞 Davet Yapıldı</option>
+        <option value="Plan">📅 Plan (Sunum) Yapıldı</option>
+        <option value="Takip Görüşmesi">🤝 Takip Görüşmesi</option>
+        <option value="Kayıt">✅ Kayıt İşlemi</option>
+        <option value="Hayır">🔴 Hayır / Olumsuz</option>
+        <option value="Durum Değişikliği">🔄 Sadece Durum Değiştir</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Durum</label>
+      <select id="gelisme-durum">
+        <option value="">Durumu değiştirme</option>
+        <option value="⚪ Değerlendirilecek">⚪ Değerlendirilecek</option>
+        <option value="🟢 Aktif">🟢 Aktif</option>
+        <option value="🔥 Sıcak">🔥 Sıcak</option>
+        <option value="🔔 Takip">🔔 Takip</option>
+        <option value="🎓 SG">🎓 SG</option>
+        <option value="❄️ DeepFreeze">❄️ DeepFreeze</option>
+        <option value="⛔ Blok">⛔ Blok</option>
+      </select>
+    </div>
+
+    <!-- Satır 2: Randevu Tarihi | Randevu Saati | boş -->
+    <div>
+      <label>Randevu Tarihi</label>
+      <input
+        id="gelisme-randevu-tarihi"
+        type="date"
+        placeholder="gg.aa.yyyy"
+      >
+    </div>
+
+    <div>
+      <label>Randevu Saati</label>
+      <input id="gelisme-randevu-saati" type="time">
+    </div>
+
+    <div></div>
+
+  </div>
+
+  <label>Gelişme / Açıklama</label>
+
+  <textarea
+    id="gelisme-aciklama"
+    rows="5"
+    placeholder="Bugün adayla ne konuşuldu? Ne oldu? Bir sonraki adım nedir?"
+  ></textarea>
+
+  <div class="gelisme-form-actions">
+
+    <button
+      class="btn-green"
+      onclick="gelismeKaydet()"
+    >
+      💾 Gelişmeyi Kaydet
+    </button>
+
+    <button
+      class="btn-secondary"
+      onclick="gelismeFormuKapat()"
+    >
+      Vazgeç
+    </button>
+
+  </div>
+
+  <div
+    id="gelisme-mesaj"
+    class="form-message"
+  ></div>
+
+</div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- ═══════════════════════════════════════════════════════
+     KEEP'TEN AKTAR MODAL
+     ═══════════════════════════════════════════════════════ -->
+<div id="keep-modal" class="modal-overlay hidden">
+  <div class="keep-modal">
+
+    <div class="keep-modal-header">
+      <h2>📱 Keep'ten Aday Aktar</h2>
+      <button class="modal-close" onclick="keepModalKapat()" title="Kapat">✕</button>
+    </div>
+
+    <div class="keep-modal-body">
+
+      <p class="keep-aciklama">
+        Keep notunuzu aşağıya yapıştırın.<br>
+        <strong>Format:</strong> Her satır <code>• [🟡/🟢] İsim: Açıklama</code> şeklinde olmalı.
+      </p>
+
+      <textarea
+        id="keep-metin"
+        placeholder="• 🟢 Ahmet Yılmaz: Yazılımcı, İzmir&#10;• 🟡 Ayşe Kaya: Pazarlama, İstanbul&#10;..."
+        rows="15"
+      ></textarea>
+
+      <div id="keep-onizleme" class="keep-onizleme hidden">
+        <div class="keep-onizleme-baslik">📊 Önizleme</div>
+        <div id="keep-onizleme-icerik"></div>
+      </div>
+
+    </div>
+
+    <div class="keep-modal-footer">
+      <button class="btn-secondary" onclick="keepOnizle()">👁️ Önizle</button>
+      <button class="btn-green" onclick="keepAktar()">✅ Aktar</button>
+      <button class="btn-cancel" onclick="keepModalKapat()">İptal</button>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

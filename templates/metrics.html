@@ -1,0 +1,192 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Raporlama{% endblock %}
+
+{% block content %}
+
+<section class="panel report-main-panel">
+
+  <div class="page-title-row">
+    <div>
+      <h2>📈 Raporlama ve Günlük Çalışma Merkezi</h2>
+      <div class="muted">
+        Aday süreçleri, günlük gelişmeler, hatırlatmalar ve AI destekli çalışma alanı.
+      </div>
+    </div>
+  </div>
+
+  <div id="metrik-kutulari" class="metric-grid"></div>
+
+  <div id="oranlar" class="muted oranlar"></div>
+
+</section>
+
+
+<section class="report-dashboard">
+
+  <div class="panel report-card report-reminders">
+
+    <div class="report-card-header">
+      <div>
+        <h3>🔔 Hatırlatmalar</h3>
+        <div class="report-card-subtitle">
+          Bugün ve yaklaşan takipler
+        </div>
+      </div>
+
+      <span class="report-badge">BUGÜN</span>
+    </div>
+
+    <div id="hatirlatmalar-listesi" class="report-list">
+
+      <div class="report-empty">
+        <div class="report-empty-icon">🔔</div>
+        <strong>Şimdilik kayıtlı hatırlatma yok.</strong>
+        <span>Takip motoru devreye alındığında burada gösterilecek.</span>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="panel report-card report-journal">
+
+    <div class="report-card-header">
+      <div>
+        <h3>📓 Günlük Gelişmeler</h3>
+        <div class="report-card-subtitle">
+          Bugünkü çalışma notunu kaydet
+        </div>
+      </div>
+
+      <span class="report-badge">GÜNLÜK</span>
+    </div>
+
+    <div class="journal-entry">
+
+      <textarea
+        id="gunluk-not"
+        class="journal-textarea"
+        placeholder="Bugünkü gelişmeyi yazın...
+
+Örneğin:
+Cengiz ile görüşüldü.
+Mehmet cuma günü tekrar aranacak.
+Ayşe toplantıya olumlu yaklaştı."
+      ></textarea>
+
+      <div class="journal-actions">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="gunlukNotTemizle()">
+          Temizle
+        </button>
+
+        <button
+          type="button"
+          class="btn-gonder"
+          onclick="gunlukNotKaydet()">
+          📓 Notu Kaydet
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="gunluk-not-durum" class="muted report-status"></div>
+
+  </div>
+
+
+  <div class="panel report-card report-timeline">
+    <div class="report-card-header">
+      <div>
+        <h3>⏳ Son Gelişmeler</h3>
+        <div class="report-card-subtitle">
+          En son yapılan işlemler
+        </div>
+      </div>
+      <span class="report-badge">KRONOLOJİ</span>
+    </div>
+
+    <div id="son-gelismeler-listesi" class="report-list">
+      <div class="report-empty">
+        <div class="report-empty-icon">⏳</div>
+        <strong>Henüz kronolojik gelişme görünmüyor.</strong>
+        <span>Aday olay geçmişi burada kronolojik olarak gösterilecek.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel report-card report-ai">
+
+    <div class="report-card-header">
+
+      <div>
+        <h3>🧠 AI Önerileri</h3>
+        <div class="report-card-subtitle">
+          Çalışma öncelikleri ve sonraki adımlar
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="btn-ai-oner"
+        onclick="sessionStorage.removeItem('v17_ai_report_html'); aiOneriHazirla();">
+        🔄 Güncelle
+      </button>
+
+    </div>
+
+    <div id="ai-onerileri" class="ai-advice">
+
+      <div class="ai-placeholder">
+
+        <div class="ai-icon">🧠</div>
+
+        <div>
+          <strong>AI çalışma önerileri</strong>
+
+          <p>
+            Günlük gelişmeler ve aday geçmişi veri omurgasına
+            bağlandığında burada takip edilmesi gereken kişiler,
+            geciken görüşmeler ve olası sonraki adımlar gösterilecek.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  
+
+    <div id="son-gelismeler" class="report-list">
+
+  </div>
+
+</section>
+
+
+
+<div id="blok-modal" class="blok-modal hidden">
+  <div class="blok-modal-icerik">
+    <div class="blok-modal-header">
+      <h3>⛔ Bloklu Adaylar</h3>
+      <button type="button" class="blok-modal-kapat" onclick="blokModalKapat()">✕</button>
+    </div>
+    <div class="blok-modal-subtitle">
+      Bu adaylar ana listede gizlidir ve AI tarafindan degerlendirilmez.
+    </div>
+    <div id="blok-liste" class="blok-liste">
+      <div class="blok-bos">Yukleniyor...</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

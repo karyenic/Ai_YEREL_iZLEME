@@ -1,0 +1,2349 @@
+KAPSUL v4 - MADDE 4 - 20261010
+======================================================================
+Olusturma: 2026-10-10 21:15:33
+Proje: C:\AI_YEREL\LiNKEDiN_TAKiP
+======================================================================
+
+======================================================================
+  config.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\config.py
+======================================================================
+   1: from pathlib import Path
+   2: 
+   3: BASE_DIR = Path(__file__).parent
+   4: DATA_DIR = BASE_DIR / "data"
+   5: DATA_DIR.mkdir(exist_ok=True)
+   6: 
+   7: # Veritabanlari
+   8: ADAY_DB = DATA_DIR / "linkedin_takip.db"
+   9: CHAT_DB = DATA_DIR / "sohbet_gecmisi.db"
+  10: 
+  11: # Izlenen Excel dosyasi (watcher bunu izler)
+  12: IZLENEN_EXCEL = DATA_DIR / "izlenen_adaylar.xlsx"
+  13: 
+  14: # Ollama ayarlari
+  15: OLLAMA_HOST = "http://127.0.0.1:11434"
+  16: 
+  17: # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  18: # MODEL AYARLARI â€” Intel Arc 140V (16 GB VRAM) iÃ§in optimize
+  19: # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  20: 
+  21: # --- Aktif Modeller ---
+  22: # Ana sohbet modeli (kalite odaklÄ±)
+  23: DEFAULT_MODEL = "qwen2.5:14b"
+  24: 
+  25: # Model Ã§Ã¶kerse veya bulunamazsa devreye girer
+  26: DEFAULT_FALLBACK = "qwen2.5:7b"
+  27: 
+  28: # ArayÃ¼z dropdown'Ä±nda gÃ¶sterilecek modeller (sÄ±ralÄ±)
+  29: PRIMARY_MODELS = [
+  30:     "qwen2.5:14b",       # yÃ¼ksek kalite
+  31:     "qwen2.5:7b",        # dengeli (hÄ±zlÄ±)
+  32:     "qwen2.5:3b",        # Ã§ok hÄ±zlÄ± (basit sorular)
+  33:     "llama3.1:latest",   # alternatif
+  34: ]
+  35: 
+  36: # Fallback zinciri (sÄ±rayla denenir)
+  37: FALLBACK_MODELS = [
+  38:     "qwen2.5:7b",
+  39:     "qwen2.5:3b",
+  40: ]
+  41: 
+  42: # --- Model BaÅŸÄ±na Context (num_ctx) ---
+  43: # Daha bÃ¼yÃ¼k context = daha fazla KV cache = daha yavaÅŸ
+  44: MODEL_CONTEXT_MAP = {
+  45:     "qwen2.5:14b": 8192,
+  46:     "qwen2.5:7b": 8192,
+  47:     "qwen2.5:3b": 4096,        # 3B için 4096 yeterli
+  48:     "llama3.1:latest": 8192,
+  49: }
+  50: 
+  51: # --- Model BaÅŸÄ±na Temperature ---
+  52: # DÃ¼ÅŸÃ¼k = tutarlÄ±, YÃ¼ksek = yaratÄ±cÄ±
+  53: MODEL_TEMP_MAP = {
+  54:     "qwen2.5:14b": 0.35,       # ana model — tutarlı/kaliteli
+  55:     "qwen2.5:7b": 0.45,        # fallback
+  56:     "qwen2.5:3b": 0.40,        # hızlı işler
+  57:     "llama3.1:latest": 0.50,   # alternatif
+  58: }
+  59: 
+  60: # --- Genel Sabitler ---
+  61: DEFAULT_NUM_CTX = 8192
+  62: NUM_CTX = DEFAULT_NUM_CTX
+  63: 
+  64: # Modelin VRAM'de kalma sÃ¼resi (24h = sÃ¼rekli hazÄ±r, reload yok)
+  65: KEEP_ALIVE = "24h"
+  66: 
+  67: # --- Aday OlaylarÄ± (context iÃ§in) ---
+  68: ADAY_OLAY_LIMIT = 3
+  69: ADAY_PROMPT_LIMIT = 50
+  70: 
+  71: 
+  72: # ═══════════════════════════════════════════════════════════════════════
+  73: # v6 MADDE 4 — AI PARAMETRELERI + STATU/OLAY TEK KAYNAK
+  74: # ═══════════════════════════════════════════════════════════════════════
+  75: 
+  76: # --- Model Basina Top-p (nucleus sampling) ---
+  77: MODEL_TOP_P_MAP = {
+  78:     "qwen2.5:14b": 0.90,
+  79:     "qwen2.5:7b": 0.90,
+  80:     "qwen2.5:3b": 0.95,
+  81:     "llama3.1:latest": 0.90,
+  82: }
+  83: 
+  84: # --- Model Basina Top-k ---
+  85: MODEL_TOP_K_MAP = {
+  86:     "qwen2.5:14b": 40,
+  87:     "qwen2.5:7b": 40,
+  88:     "qwen2.5:3b": 50,
+  89:     "llama3.1:latest": 40,
+  90: }
+  91: 
+  92: # --- Model Basina Repeat Penalty ---
+  93: MODEL_REPEAT_PENALTY_MAP = {
+  94:     "qwen2.5:14b": 1.15,
+  95:     "qwen2.5:7b": 1.15,
+  96:     "qwen2.5:3b": 1.10,
+  97:     "llama3.1:latest": 1.10,
+  98: }
+  99: 
+ 100: # --- Model Basina Repeat Last N ---
+ 101: MODEL_REPEAT_LAST_N_MAP = {
+ 102:     "qwen2.5:14b": 256,
+ 103:     "qwen2.5:7b": 256,
+ 104:     "qwen2.5:3b": 256,
+ 105:     "llama3.1:latest": 256,
+ 106: }
+ 107: 
+ 108: # --- Analiz Profili (strateji/degerlendirme istekleri icin dusuk temp) ---
+ 109: ANALIZ_TEMP_MAP = {
+ 110:     "qwen2.5:14b": 0.20,
+ 111:     "qwen2.5:7b": 0.25,
+ 112:     "qwen2.5:3b": 0.30,
+ 113:     "llama3.1:latest": 0.25,
+ 114: }
+ 115: 
+ 116: # --- Sohbet Baglami ---
+ 117: CHAT_GECMIS_LIMIT = 6
+ 118: 
+ 119: # --- ADAY STATULERI (TEK KAYNAK) ---
+ 120: # DB'de ve UI dropdown'larinda bu "tam" deger kullanilir.
+ 121: ADAY_STATULERI = [
+ 122:     # ON TESPIT (aday listeye girerken kullanici secer)
+ 123:     {"kod": "degerlendirilecek", "tam": "⚪ Değerlendirilecek", "katman": "on_tespit",
+ 124:      "aciklama": "Sonra degerlendirilmek uzere"},
+ 125:     {"kod": "aktif", "tam": "🟢 Aktif", "katman": "on_tespit",
+ 126:      "aciklama": "Surec devam ediyor"},
+ 127:     {"kod": "sicak", "tam": "🔥 Sıcak", "katman": "on_tespit",
+ 128:      "aciklama": "Yuksek potansiyel, acil takip"},
+ 129:     # SONUC (surec sonunda atanir)
+ 130:     {"kod": "takip", "tam": "🔔 Takip", "katman": "sonuc",
+ 131:      "aciklama": "Plan OK, kayit yok"},
+ 132:     {"kod": "sg", "tam": "🎓 SG", "katman": "sonuc",
+ 133:      "aciklama": "Kayit tamamlandi"},
+ 134:     {"kod": "deepfreeze", "tam": "❄️ DeepFreeze", "katman": "sonuc",
+ 135:      "aciklama": "Yumusak hayir"},
+ 136:     {"kod": "blok", "tam": "⛔ Blok", "katman": "sonuc",
+ 137:      "aciklama": "Net hayir, listeden gizli"},
+ 138: ]
+ 139: 
+ 140: # --- OLAY TIPLERI (TEK KAYNAK — bugun duzeltilen bug icin) ---
+ 141: # UI dropdown'inda gorunen "tam" deger ile eslesir.
+ 142: # "bayrak" alani: bu olay secildiginde hangi checkbox set edilir.
+ 143: OLAY_TIPLERI = [
+ 144:     {"kod": "not",          "html_value": "Not",                "bayrak": None},
+ 145:     {"kod": "davet",        "html_value": "Davet",              "bayrak": "davet"},
+ 146:     {"kod": "plan",         "html_value": "Plan",               "bayrak": "plan"},
+ 147:     {"kod": "takip_g",      "html_value": "Takip Görüşmesi",    "bayrak": "takip"},
+ 148:     {"kod": "kayit",        "html_value": "Kayıt",              "bayrak": "kayit"},
+ 149:     {"kod": "hayir",        "html_value": "Hayır",              "bayrak": "hayir"},
+ 150:     {"kod": "sadece_durum", "html_value": "Durum Değişikliği",  "bayrak": None},
+ 151: ]
+ 152: 
+ 153: # --- Statu Gecis Kurallari (Otomatik) ---
+ 154: STATU_GECIS_KURALLARI = [
+ 155:     {"kosul": "hayir>=1",           "hedef": "deepfreeze", "tip": "otomatik"},
+ 156:     {"kosul": "plan=1 and kayit=1", "hedef": "sg",         "tip": "otomatik"},
+ 157:     {"kosul": "plan=1 and kayit=0", "hedef": "takip",      "tip": "otomatik"},
+ 158:     {"kosul": "plan=0 and davet=1", "hedef": "aktif",      "tip": "otomatik"},
+ 159: ]
+ 160: FLASK_HOST = "127.0.0.1"
+ 161: FLASK_PORT = 5050
+ 162: FLASK_DEBUG = False
+
+  (162 satir)
+
+======================================================================
+  core/ollama_client.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\core\ollama_client.py
+======================================================================
+   1: import ollama
+   2: import time
+   3: from datetime import datetime
+   4: import psutil
+   5: 
+   6: 
+   7: from config import (MODEL_CONTEXT_MAP, MODEL_TEMP_MAP, DEFAULT_NUM_CTX,
+   8:                     KEEP_ALIVE, DEFAULT_MODEL, DEFAULT_FALLBACK,
+   9:                     MODEL_TOP_P_MAP, MODEL_TOP_K_MAP,
+  10:                     MODEL_REPEAT_PENALTY_MAP, MODEL_REPEAT_LAST_N_MAP,
+  11:                     ADAY_STATULERI, ANALIZ_TEMP_MAP)
+  12: 
+  13: _warmed_models = set()
+  14: 
+  15: def _get_num_ctx(model_adi):
+  16:     """Model bazli akilli num_ctx dondurur."""
+  17:     return MODEL_CONTEXT_MAP.get(model_adi, DEFAULT_NUM_CTX)
+  18: 
+  19: def _get_temp(model_adi, profil=None):
+  20:     """Model bazli temperature dondurur.
+  21: 
+  22:     profil="analiz" ise ANALIZ_TEMP_MAP (dusuk temp: tutarli analiz),
+  23:     aksi halde MODEL_TEMP_MAP kullanilir.
+  24:     """
+  25:     if profil == "analiz":
+  26:         return ANALIZ_TEMP_MAP.get(model_adi, MODEL_TEMP_MAP.get(model_adi, 0.5))
+  27:     return MODEL_TEMP_MAP.get(model_adi, 0.5)
+  28: 
+  29: def _get_top_p(model_adi):
+  30:     """Model bazli top_p dondurur."""
+  31:     return MODEL_TOP_P_MAP.get(model_adi, 0.9)
+  32: 
+  33: def _get_top_k(model_adi):
+  34:     """Model bazli top_k dondurur."""
+  35:     return MODEL_TOP_K_MAP.get(model_adi, 40)
+  36: 
+  37: def _get_repeat_penalty(model_adi):
+  38:     """Model bazli repeat_penalty dondurur."""
+  39:     return MODEL_REPEAT_PENALTY_MAP.get(model_adi, 1.15)
+  40: 
+  41: def _get_repeat_last_n(model_adi):
+  42:     """Model bazli repeat_last_n dondurur."""
+  43:     return MODEL_REPEAT_LAST_N_MAP.get(model_adi, 256)
+  44: 
+  45: def warm_up(model_adi=DEFAULT_MODEL):
+  46:     """Modeli VRAM e yukler. Uygulama acilisinda bir kere cagrilir."""
+  47:     if model_adi in _warmed_models:
+  48:         return True
+  49:     try:
+  50:         num_ctx = _get_num_ctx(model_adi)
+  51:         print(f"Warm-up: {model_adi} (num_ctx: {num_ctx})")
+  52:         ollama.generate(
+  53:             model=model_adi,
+  54:             prompt="",
+  55:             options={"num_ctx": num_ctx, "num_predict": 0},
+  56:             keep_alive=KEEP_ALIVE
+  57:         )
+  58:         _warmed_models.add(model_adi)
+  59:         print(f"OK: {model_adi} VRAM e yuklendi")
+  60:         return True
+  61:     except Exception as e:
+  62:         print(f"UYARI: Warm-up hatasi ({model_adi}): {e}")
+  63:         return False
+  64: 
+  65: def _statuleri_metne_cevir():
+  66:     """config.ADAY_STATULERI'ndan sistem promptu icin statu listesi uretir."""
+  67:     on_tespit = [s for s in ADAY_STATULERI if s.get("katman") == "on_tespit"]
+  68:     sonuc = [s for s in ADAY_STATULERI if s.get("katman") == "sonuc"]
+  69: 
+  70:     satirlar = ["STARTING STATUSES (user selects when creating a candidate):"]
+  71:     for i, s in enumerate(on_tespit, 1):
+  72:         satirlar.append(f"{i}. {s['tam']}: {s['aciklama']}")
+  73:     satirlar.append("")
+  74:     satirlar.append("AUTOMATIC STATUSES (system assigns based on events):")
+  75:     for i, s in enumerate(sonuc, len(on_tespit) + 1):
+  76:         satirlar.append(f"{i}. {s['tam']}: {s['aciklama']}")
+  77:     return "\n".join(satirlar)
+  78: 
+  79: 
+  80: def _sistem_prompt(df_ozet):
+  81:     statu_metni = _statuleri_metne_cevir()
+  82:     return f"""[SYSTEM ROLE & CORE OBJECTIVE]
+  83: You are an elite, highly rigorous AI Executive Assistant and Chief Data Analyst specialized in Candidate Tracking Systems (ATS), Network Marketing operations, conversion forecasting, and behavioral pattern analysis.
+  84: Your core objective is to act as a strategic partner: analyzing candidate progression, predicting conversion probabilities based on historical patterns, identifying bottlenecks, and providing actionable, forward-looking recommendations.
+  85: 
+  86: [CANDIDATE CATEGORIES (The EXACT statuses in this system)]
+  87: {statu_metni}
+  88: 
+  89: [STATUS TRANSITION RULES]
+  90: - Plan ✓ + Kayıt ✓ → 🎓 SG (Mezun)
+  91: - Plan ✓ + Kayıt ✗ → 🔔 Takip
+  92: - Plan ✗ → ❄️ DeepFreeze
+  93: - Hayır ✓ → NO AUTO-ASSIGNMENT. The user must manually choose between:
+  94:     * ❄️ DeepFreeze (soft no, still visible in list)
+  95:     * ⛔ Blok (hard no, hidden from list)
+  96:   The AI may SUGGEST one based on the conversation context, but must NEVER auto-assign.
+  97: 
+  98: [IMPORTANT]
+  99: - "🆕 Yeni" and "🔴 Olumsuz" are DEPRECATED. Never suggest them.
+ 100: - New candidates must start as: ⚪ Değerlendirilecek, 🟢 Aktif, or 🔥 Sıcak.
+ 101: 
+ 102: [ADVANCED CAPABILITIES & TASKS]
+ 103: 1. Predictive Modeling & Probability: Evaluate candidate statuses (invitations, meetings, presentations, registrations) to calculate conversion likelihoods and predict dropouts.
+ 104: 2. Trend & Behavioral Analysis: Detect patterns in qualitative notes and timestamps to assess momentum and timing effectiveness.
+ 105: 3. Strategic Recommendations: Proactively suggest precise, high-impact next steps. Every recommendation MUST include: Category + Action + Reason.
+ 106: 
+ 107: [CALENDAR & PLANNING DISCIPLINE (CRITICAL)]
+ 108: When the user asks for a weekly schedule or a working plan, you MUST follow these strict rules:
+ 109: 1. **NO SKIPPED DAYS:** List ALL 7 days sequentially: Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi, Pazar. Never skip.
+ 110: 2. **CHRONOLOGICAL ORDER:** Days follow each other strictly without jumping.
+ 111: 3. **DATE FORMAT:** Use Turkish format "gg.aa.yyyy" (e.g., 04.10.2026).
+ 112: 4. **NO INVENTED HOLIDAYS:** Do NOT invent holidays or skip days for "tatil". If a Turkish public holiday is known (like 29 Ekim Cumhuriyet Bayramı), mention it but still include the day in the list.
+ 113: 5. **TODAY'S DATE:** The current date will be provided by the user or system; use it as the starting point for "this week" / "next week" plans.
+ 114: 
+ 115: [EXCEL / CSV FORMAT RULE]
+ 116: When the user requests an Excel format, table, or working plan to be exported, DO NOT use Markdown pipes (|). Instead, output strict CSV format using semicolon (;) as the separator inside a ```csv code block, so the user can save it directly as a .csv file and open it in Excel.
+ 117: 
+ 118: [RESPONSE FORMAT (when recommending actions)]
+ 119: Oneri: [Adayi X kategorisine cek]
+ 120: Gerekce: [Kisa aciklama, veriye dayali]
+ 121: Aksiyon: [Somut, tarihli öneri]
+ 122: 
+ 123: # CANDIDATE DATA
+ 124: {df_ozet}
+ 125: 
+ 126: # HARD RULES (NON-NEGOTIABLE)
+ 127: 1. GROUNDING: Every factual claim MUST be traceable to the data above.
+ 128: 2. NO FABRICATION: Never invent names, dates, or statuses.
+ 129: 3. CATEGORY PRECISION: Use ONLY the 8 official funnel categories listed above.
+ 130: 4. LANGUAGE: CRITICAL - Your ENTIRE reply must be in fluent, natural, professional Turkish. Never reply in English.
+ 131: 5. CONCISE: No long essays. 5-10 lines maximum per answer (unless a weekly schedule is explicitly requested).
+ 132: 6. NO STATISTICS PADDING: If user asks a simple count, answer with the count only."""
+ 133: 
+ 134: 
+ 135: def chat_stream(mesajlar, model=DEFAULT_MODEL, fallback=DEFAULT_FALLBACK, durum=None, profil=None):
+ 136:     """Generator: Ollama dan gelen chunk lari yield eder. Fallback li.
+ 137: 
+ 138:     profil: "analiz" -> dusuk temperature (ANALIZ_TEMP_MAP)
+ 139:     """
+ 140:     if durum is None:
+ 141:         durum = {}
+ 142:     durum["model"] = model
+ 143:     durum["fallback"] = False
+ 144:     durum["profil"] = profil
+ 145: 
+ 146:     def _deneme(m):
+ 147:         t0 = time.time()
+ 148:         num_ctx = _get_num_ctx(m)
+ 149:         sicaklik = _get_temp(m, profil)
+ 150:         print(f"{m} cagriliyor (num_ctx: {num_ctx}, temp: {sicaklik})...")
+ 151:         full = ollama.chat(
+ 152:             model=m,
+ 153:             messages=mesajlar,
+ 154:             options={
+ 155:                 "num_ctx": num_ctx,
+ 156:                 "temperature": sicaklik,
+ 157:                 "top_p": _get_top_p(m),
+ 158:                 "top_k": _get_top_k(m),
+ 159:                 "repeat_penalty": _get_repeat_penalty(m),
+ 160:                 "repeat_last_n": _get_repeat_last_n(m),
+ 161:             },
+ 162:             keep_alive=KEEP_ALIVE,
+ 163:             stream=True
+ 164:         )
+ 165:         ilk = True
+ 166:         for chunk in full:
+ 167:             if ilk:
+ 168:                 print(f"{m} ilk token: {time.time()-t0:.1f}sn")
+ 169:                 ilk = False
+ 170:             yield chunk["message"]["content"]
+ 171: 
+ 172:     try:
+ 173:         yield from _deneme(model)
+ 174:     except Exception as e:
+ 175:         print(f"{model} hata verdi, fallback: {fallback} ({e})")
+ 176:         durum["fallback"] = True
+ 177:         durum["model"] = fallback
+ 178:         yield f"\n\n*(Not: {model} yanit vermedigi icin {fallback} ile yanitlaniyor)*\n\n"
+ 179:         try:
+ 180:             yield from _deneme(fallback)
+ 181:         except Exception as e2:
+ 182:             yield f"\n\nFallback de basarisiz: {e2}"
+ 183: 
+ 184: 
+ 185: def sistem_mesaji_olustur(df_ozet):
+ 186:     """Sistem prompt'una bugunun tarihini enjekte eder."""
+ 187:     bugun = datetime.now()
+ 188:     
+ 189:     # Turkce gun isimleri
+ 190:     gunler = ["Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi", "Pazar"]
+ 191:     aylar = ["Ocak", "Subat", "Mart", "Nisan", "Mayis", "Haziran",
+ 192:              "Temmuz", "Agustos", "Eylul", "Ekim", "Kasim", "Aralik"]
+ 193:     
+ 194:     gun_adi = gunler[bugun.weekday()]
+ 195:     ay_adi = aylar[bugun.month - 1]
+ 196:     
+ 197:     tarih_bilgisi = f"""
+ 198: [CURRENT DATE - TODAY]
+ 199: Bugun: {bugun.strftime('%d.%m.%Y')} ({gun_adi})
+ 200: Ay: {ay_adi} {bugun.year}
+ 201: Yil: {bugun.year}
+ 202: 
+ 203: [CRITICAL DATE RULE]
+ 204: - Tum tarihler {bugun.year} yilinda olmalidir.
+ 205: - "Bu hafta" = {bugun.strftime('%d.%m.%Y')} haftasi
+ 206: - "Gelecek hafta" = bir sonraki hafta, yil {bugun.year}
+ 207: - ASLA {bugun.year} disinda bir yil yazma.
+ 208: - Ornek dogru format: {bugun.strftime('%d.%m.%Y')}
+ 209: """
+ 210:     
+ 211:     return {"role": "system", "content": _sistem_prompt(df_ozet) + tarih_bilgisi}
+ 212: 
+ 213: 
+ 214: def _alan(obj, ad, varsayilan=None):
+ 215:     """dict veya pydantic-tarzi objeden guvenli alan okuma."""
+ 216:     if obj is None:
+ 217:         return varsayilan
+ 218:     if hasattr(obj, "get"):
+ 219:         try:
+ 220:             v = obj.get(ad, varsayilan)
+ 221:             if v is not None:
+ 222:                 return v
+ 223:         except Exception:
+ 224:             pass
+ 225:     return getattr(obj, ad, varsayilan)
+ 226: 
+ 227: 
+ 228: def durum_ozeti():
+ 229:     """Nav daki durum pili icin: Ollama ayakta mi, hangi model VRAM de?"""
+ 230:     try:
+ 231:         ps = ollama.ps()
+ 232:         modeller = _alan(ps, "models", []) or []
+ 233:         sonuc = []
+ 234:         for m in modeller:
+ 235:             sonuc.append({
+ 236:                 "name": _alan(m, "model") or _alan(m, "name"),
+ 237:                 "size": _alan(m, "size"),
+ 238:                 "vram": _alan(m, "size_vram", 0) or 0,
+ 239:                 "until": str(_alan(m, "expires_at", "")) or "",
+ 240:             })
+ 241:         try:
+ 242:             cpu_pct = psutil.cpu_percent(interval=None)
+ 243:         except Exception:
+ 244:             cpu_pct = None
+ 245:         return {
+ 246:             "ok": True,
+ 247:             "models": sonuc,
+ 248:             "cpu_percent": cpu_pct,
+ 249:             "gpu_aktif": len(sonuc) > 0,
+ 250:         }
+ 251:     except Exception as e:
+ 252:         return {"ok": False, "error": str(e), "models": [], "cpu_percent": None, "gpu_aktif": False}
+
+  (252 satir)
+
+======================================================================
+  core/database.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\core\database.py
+======================================================================
+   1: import sqlite3
+   2: from datetime import datetime
+   3: from config import ADAY_DB, CHAT_DB, ADAY_STATULERI
+   4: 
+   5: 
+   6: def _statu_adi(kod):
+   7:     """config.ADAY_STATULERI'ndan tam statu string'ini dondurur.
+   8:     Ornek: _statu_adi('sg') -> '🎓 SG'"""
+   9:     for s in ADAY_STATULERI:
+  10:         if s["kod"] == kod:
+  11:             return s["tam"]
+  12:     return kod  # bulunamazsa kodu oldugu gibi don
+  13: 
+  14: 
+  15: 
+  16: def _profil_id_eski_aday(aday_id):
+  17:     """Eski aday ID'sinden profil ID'sini bulur."""
+  18:     with _conn(ADAY_DB) as c:
+  19:         # 1. aday_olaylari tablosunda ara
+  20:         row = c.execute(
+  21:             """
+  22:             SELECT aday_id
+  23:             FROM aday_olaylari
+  24:             WHERE kaynak_kayit_id = ?
+  25:             ORDER BY id ASC
+  26:             LIMIT 1
+  27:             """,
+  28:             (aday_id,)
+  29:         ).fetchone()
+  30: 
+  31:         if row:
+  32:             return row["aday_id"]
+  33: 
+  34:         # 2. isim ile aday_profil'da ara
+  35:         eski = c.execute(
+  36:             "SELECT isim FROM adaylar WHERE id=?",
+  37:             (aday_id,)
+  38:         ).fetchone()
+  39: 
+  40:         if not eski:
+  41:             return None
+  42: 
+  43:         isim = eski["isim"] or ""
+  44: 
+  45:         # 3. Ayni isimdeki profil kaydini bul
+  46:         profil = c.execute(
+  47:             "SELECT id FROM aday_profil WHERE isim=? LIMIT 1",
+  48:             (isim,)
+  49:         ).fetchone()
+  50: 
+  51:         if profil:
+  52:             return profil["id"]
+  53: 
+  54:         return None
+  55: 
+  56: def _conn(db_path):
+  57:     conn = sqlite3.connect(
+  58:         str(db_path),
+  59:         check_same_thread=False,
+  60:         timeout=10
+  61:     )
+  62:     conn.row_factory = sqlite3.Row
+  63:     try:
+  64:         conn.execute("PRAGMA journal_mode=WAL")
+  65:         conn.execute("PRAGMA foreign_keys=ON")
+  66:     except Exception:
+  67:         pass
+  68:     return conn
+  69: 
+  70: 
+  71: def _kolon_ekle(conn, tablo, kolon, tip):
+  72:     mevcut = {
+  73:         r["name"]
+  74:         for r in conn.execute(f"PRAGMA table_info({tablo})").fetchall()
+  75:     }
+  76:     if kolon not in mevcut:
+  77:         conn.execute(f"ALTER TABLE {tablo} ADD COLUMN {kolon} {tip}")
+  78:         return True
+  79:     return False
+  80: 
+  81: 
+  82: def init_all():
+  83:     # --------------------------------------------------------
+  84:     # Eski aday tablosu - mevcut Excel/AI sistemi korunuyor.
+  85:     # --------------------------------------------------------
+  86:     with _conn(ADAY_DB) as c:
+  87:         c.execute('''CREATE TABLE IF NOT EXISTS adaylar (
+  88:             id INTEGER PRIMARY KEY AUTOINCREMENT,
+  89:             isim TEXT,
+  90:             tarih TEXT,
+  91:             aciklama TEXT,
+  92:             davet INTEGER,
+  93:             randevu INTEGER,
+  94:             plan INTEGER,
+  95:             kayit INTEGER,
+  96:             takip INTEGER,
+  97:             hayir INTEGER,
+  98:             is_ariyor INTEGER,
+  99:             kaynak_hash TEXT UNIQUE
+ 100:         )''')
+ 101: 
+ 102:         # ----------------------------------------------------
+ 103:         # Yeni aday profili
+ 104:         # ----------------------------------------------------
+ 105:         c.execute('''
+ 106:             CREATE TABLE IF NOT EXISTS aday_profil (
+ 107:                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 108:                 isim TEXT NOT NULL,
+ 109:                 telefon TEXT DEFAULT '',
+ 110:                 email TEXT DEFAULT '',
+ 111:                 adres TEXT DEFAULT '',
+ 112:                 aktif INTEGER DEFAULT 1,
+ 113:                 created_at TEXT,
+ 114:                 updated_at TEXT
+ 115:             )
+ 116:         ''')
+ 117: 
+ 118:         # ----------------------------------------------------
+ 119:         # Yeni aday olay/gecmis tablosu
+ 120:         # ----------------------------------------------------
+ 121:         c.execute('''
+ 122:             CREATE TABLE IF NOT EXISTS aday_olaylari (
+ 123:                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 124:                 aday_id INTEGER NOT NULL,
+ 125:                 tarih TEXT,
+ 126:                 olay_tipi TEXT,
+ 127:                 olay_metni TEXT,
+ 128:                 kaynak TEXT,
+ 129:                 kaynak_kayit_id INTEGER,
+ 130:                 davet INTEGER DEFAULT 0,
+ 131:                 randevu INTEGER DEFAULT 0,
+ 132:                 plan INTEGER DEFAULT 0,
+ 133:                 kayit INTEGER DEFAULT 0,
+ 134:                 takip INTEGER DEFAULT 0,
+ 135:                 hayir INTEGER DEFAULT 0,
+ 136:                 is_ariyor INTEGER DEFAULT 0,
+ 137:                 durum TEXT DEFAULT '',
+ 138:                 created_at TEXT
+ 139:             )
+ 140:         ''')
+ 141: 
+ 142:         # Önceden migration yapılmış sistemlerde durum kolonu yoksa ekle.
+ 143:         _kolon_ekle(c, "aday_olaylari", "durum", "TEXT DEFAULT ''")
+ 144:         _kolon_ekle(c, "adaylar", "blok", "INTEGER DEFAULT 0")
+ 145:         _kolon_ekle(c, "adaylar", "blok_tarihi", "TEXT")
+ 146:         _kolon_ekle(c, "adaylar", "blok_notu", "TEXT")
+ 147: 
+ 148:         c.execute('''
+ 149:             CREATE INDEX IF NOT EXISTS idx_aday_profil_isim
+ 150:             ON aday_profil(isim)
+ 151:         ''')
+ 152: 
+ 153:         c.execute('''
+ 154:             CREATE INDEX IF NOT EXISTS idx_aday_olaylari_aday
+ 155:             ON aday_olaylari(aday_id)
+ 156:         ''')
+ 157: 
+ 158:         c.execute('''
+ 159:             CREATE INDEX IF NOT EXISTS idx_aday_olaylari_tarih
+ 160:             ON aday_olaylari(tarih)
+ 161:         ''')
+ 162: 
+ 163:         # ----------------------------------------------------
+ 164:         # Migration kontrolü:
+ 165:         # Eski adaylar için profil + eski Excel geçmişi oluştur.
+ 166:         # Daha önce yapılmış migration tekrar kayıt üretmez.
+ 167:         # ----------------------------------------------------
+ 168:         eski_adaylar = c.execute(
+ 169:             "SELECT * FROM adaylar ORDER BY id ASC"
+ 170:         ).fetchall()
+ 171: 
+ 172:         for eski in eski_adaylar:
+ 173:             isim = (eski["isim"] or "").strip()
+ 174:             if not isim:
+ 175:                 continue
+ 176: 
+ 177:             profil = c.execute(
+ 178:                 '''
+ 179:                 SELECT id
+ 180:                 FROM aday_profil
+ 181:                 WHERE lower(trim(isim)) = lower(trim(?))
+ 182:                 ORDER BY id ASC
+ 183:                 LIMIT 1
+ 184:                 ''',
+ 185:                 (isim,)
+ 186:             ).fetchone()
+ 187: 
+ 188:             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 189: 
+ 190:             if profil is None:
+ 191:                 cur = c.execute(
+ 192:                     '''
+ 193:                     INSERT INTO aday_profil
+ 194:                     (isim, telefon, email, adres, durum, aktif, created_at, updated_at)
+ 195:                     VALUES (?, '', '', '', ?, 1, ?, ?)
+ 196:                     ''',
+ 197:                     (isim.strip(), durum or "🆕 Yeni", now, now)
+ 198:                 )
+ 199:                 profil_id = cur.lastrowid
+ 200:             else:
+ 201:                 profil_id = profil["id"]
+ 202: 
+ 203:             mevcut_olay = c.execute(
+ 204:                 '''
+ 205:                 SELECT id
+ 206:                 FROM aday_olaylari
+ 207:                 WHERE kaynak = 'excel_migrasyon'
+ 208:                   AND kaynak_kayit_id = ?
+ 209:                 LIMIT 1
+ 210:                 ''',
+ 211:                 (eski["id"],)
+ 212:             ).fetchone()
+ 213: 
+ 214:             if mevcut_olay is None:
+ 215:                 c.execute(
+ 216:                     '''
+ 217:                     INSERT INTO aday_olaylari
+ 218:                     (
+ 219:                         aday_id,
+ 220:                         tarih,
+ 221:                         olay_tipi,
+ 222:                         olay_metni,
+ 223:                         kaynak,
+ 224:                         kaynak_kayit_id,
+ 225:                         davet,
+ 226:                         randevu,
+ 227:                         plan,
+ 228:                         kayit,
+ 229:                         takip,
+ 230:                         hayir,
+ 231:                         is_ariyor,
+ 232:                         durum,
+ 233:                         created_at
+ 234:                     )
+ 235:                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ 236:                     ''',
+ 237:                     (
+ 238:                         profil_id,
+ 239:                         eski["tarih"] or "",
+ 240:                         "Excel Geçmişi",
+ 241:                         eski["aciklama"] or "",
+ 242:                         "excel_migrasyon",
+ 243:                         eski["id"],
+ 244:                         int(eski["davet"] or 0),
+ 245:                         int(eski["randevu"] or 0),
+ 246:                         int(eski["plan"] or 0),
+ 247:                         int(eski["kayit"] or 0),
+ 248:                         int(eski["takip"] or 0),
+ 249:                         int(eski["hayir"] or 0),
+ 250:                         int(eski["is_ariyor"] or 0),
+ 251:                         "",
+ 252:                         now
+ 253:                     )
+ 254:                 )
+ 255: 
+ 256:         c.commit()
+ 257: 
+ 258:     # --------------------------------------------------------
+ 259:     # Chat geçmişi
+ 260:     # --------------------------------------------------------
+ 261:     with _conn(CHAT_DB) as c:
+ 262:         c.execute('''CREATE TABLE IF NOT EXISTS sohbet_loglari (
+ 263:             id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 264:             rol TEXT,
+ 265:             icerik TEXT,
+ 266:             zaman TEXT,
+ 267:             model TEXT,
+ 268:             fallback INTEGER DEFAULT 0
+ 269:         )''')
+ 270: 
+ 271:         mevcut = {
+ 272:             r["name"]
+ 273:             for r in c.execute(
+ 274:                 "PRAGMA table_info(sohbet_loglari)"
+ 275:             ).fetchall()
+ 276:         }
+ 277: 
+ 278:         if "model" not in mevcut:
+ 279:             c.execute(
+ 280:                 "ALTER TABLE sohbet_loglari ADD COLUMN model TEXT"
+ 281:             )
+ 282: 
+ 283:         if "fallback" not in mevcut:
+ 284:             c.execute(
+ 285:                 "ALTER TABLE sohbet_loglari ADD COLUMN fallback INTEGER DEFAULT 0"
+ 286:             )
+ 287: 
+ 288:         if "kategori" not in mevcut:
+ 289:             c.execute(
+ 290:                 "ALTER TABLE sohbet_loglari ADD COLUMN kategori TEXT DEFAULT 'sohbet'"
+ 291:             )
+ 292:             # Mevcut mesajlari geriye donuk kategorize et
+ 293:             print("Mevcut mesajlar kategorize ediliyor...")
+ 294:             tum_mesajlar = c.execute(
+ 295:                 "SELECT id, rol, icerik FROM sohbet_loglari"
+ 296:             ).fetchall()
+ 297:             for m in tum_mesajlar:
+ 298:                 k = _kategori_bul(m["icerik"], m["rol"])
+ 299:                 c.execute(
+ 300:                     "UPDATE sohbet_loglari SET kategori=? WHERE id=?",
+ 301:                     (k, m["id"])
+ 302:                 )
+ 303:             print(f"{len(tum_mesajlar)} mesaj kategorize edildi")
+ 304: 
+ 305:         c.execute(
+ 306:             "CREATE INDEX IF NOT EXISTS idx_sohbet_kategori ON sohbet_loglari(kategori)"
+ 307:         )
+ 308: 
+ 309:         c.commit()
+ 310: 
+ 311: 
+ 312: # ============================================================
+ 313: # Eski aday sistemi
+ 314: # ============================================================
+ 315: 
+ 316: def adaylari_getir(bloklular_dahil=False):
+ 317:     """Tum adaylari son durumlariyla birlikte dondurur.
+ 318:     Durum, aday_profil tablosundan okunur (kart ile ayni kaynak).
+ 319:     bloklular_dahil=False ise blok=1 olanlar haric tutulur."""
+ 320:     with _conn(ADAY_DB) as c:
+ 321:         if bloklular_dahil:
+ 322:             rows = c.execute("SELECT * FROM adaylar ORDER BY id DESC").fetchall()
+ 323:         else:
+ 324:             rows = c.execute(
+ 325:                 "SELECT * FROM adaylar WHERE COALESCE(blok, 0) = 0 ORDER BY id DESC"
+ 326:             ).fetchall()
+ 327: 
+ 328:         sonuc = []
+ 329:         for r in rows:
+ 330:             d = dict(r)
+ 331:             isim = (d.get("isim") or "").strip()
+ 332: 
+ 333:             # Durum: aday_profil'DAN (kart ile ayni kaynak)
+ 334:             durum = "Yeni"
+ 335:             try:
+ 336:                 if isim:
+ 337:                     profil = c.execute(
+ 338:                         "SELECT durum FROM aday_profil WHERE LOWER(TRIM(isim))=LOWER(TRIM(?)) LIMIT 1",
+ 339:                         (isim,)
+ 340:                     ).fetchone()
+ 341:                     
+ 342:                     if profil and profil["durum"]:
+ 343:                         durum = profil["durum"]
+ 344:                     else:
+ 345:                         durum = "Yeni"
+ 346:             except Exception:
+ 347:                 durum = "Yeni"
+ 348: 
+ 349:             # Açıklama: en son gelişme metni (varsa)
+ 350:             try:
+ 351:                 son_olay = c.execute(
+ 352:                     """
+ 353:                     SELECT olay_metni FROM aday_olaylari
+ 354:                     WHERE kaynak_kayit_id = ?
+ 355:                       AND olay_metni IS NOT NULL
+ 356:                       AND olay_metni != ''
+ 357:                     ORDER BY tarih DESC, id DESC
+ 358:                     LIMIT 1
+ 359:                     """,
+ 360:                     (r["id"],)
+ 361:                 ).fetchone()
+ 362:                 if son_olay and son_olay["olay_metni"]:
+ 363:                     d["aciklama"] = son_olay["olay_metni"]
+ 364:             except Exception:
+ 365:                 pass
+ 366: 
+ 367:             d["durum"] = durum
+ 368:             sonuc.append(d)
+ 369: 
+ 370:     return sonuc
+ 371: 
+ 372: def aday_ekle(
+ 373:     isim,
+ 374:     tarih,
+ 375:     aciklama,
+ 376:     davet,
+ 377:     randevu,
+ 378:     plan,
+ 379:     kayit,
+ 380:     takip,
+ 381:     hayir,
+ 382:     is_ariyor,
+ 383:     kaynak_hash=None,
+ 384:     linkedin_url=None,
+ 385:     durum=""
+ 386: ):
+ 387:     try:
+ 388:         with _conn(ADAY_DB) as c:
+ 389:             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 390: 
+ 391:             # Blok kontrolü: aynı isimde bloklu aday varsa atla
+ 392:             if isim and isim.strip():
+ 393:                 bloklu = c.execute(
+ 394:                     "SELECT id FROM adaylar WHERE LOWER(TRIM(isim))=LOWER(TRIM(?)) AND COALESCE(blok,0)=1 LIMIT 1",
+ 395:                     (isim.strip(),)
+ 396:                 ).fetchone()
+ 397:                 if bloklu:
+ 398:                     print(f"[BLOK] '{isim}' bloklu listede, atlandi (id={bloklu['id']})")
+ 399:                     return False
+ 400: 
+ 401:             c.execute(
+ 402:                 '''
+ 403:                 INSERT INTO adaylar
+ 404:                 (
+ 405:                     isim,
+ 406:                     tarih,
+ 407:                     aciklama,
+ 408:                     davet,
+ 409:                     randevu,
+ 410:                     plan,
+ 411:                     kayit,
+ 412:                     takip,
+ 413:                     hayir,
+ 414:                     is_ariyor,
+ 415:                     kaynak_hash,
+ 416:                     linkedin_url
+ 417:                 )
+ 418:                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ 419:                 ''',
+ 420:                 (
+ 421:                     isim,
+ 422:                     tarih,
+ 423:                     aciklama,
+ 424:                     int(davet),
+ 425:                     int(randevu),
+ 426:                     int(plan),
+ 427:                     int(kayit),
+ 428:                     int(takip),
+ 429:                     int(hayir),
+ 430:                     int(is_ariyor),
+ 431:                     kaynak_hash,
+ 432:                     linkedin_url
+ 433:                 )
+ 434:             )
+ 435: 
+ 436:             eski_id = c.execute(
+ 437:                 "SELECT last_insert_rowid() AS id"
+ 438:             ).fetchone()["id"]
+ 439: 
+ 440:             profil = c.execute(
+ 441:                 '''
+ 442:                 SELECT id
+ 443:                 FROM aday_profil
+ 444:                 WHERE lower(trim(isim)) = lower(trim(?))
+ 445:                 ORDER BY id ASC
+ 446:                 LIMIT 1
+ 447:                 ''',
+ 448:                 (isim.strip(),)
+ 449:             ).fetchone()
+ 450: 
+ 451:             if profil is None:
+ 452:                 cur = c.execute(
+ 453:                     '''
+ 454:                     INSERT INTO aday_profil
+ 455:                     (isim, telefon, email, adres, durum, aktif, created_at, updated_at)
+ 456:                     VALUES (?, '', '', '', ?, 1, ?, ?)
+ 457:                     ''',
+ 458:                     (isim.strip(), durum or "🆕 Yeni", now, now)
+ 459:                 )
+ 460:                 profil_id = cur.lastrowid
+ 461:             else:
+ 462:                 profil_id = profil["id"]
+ 463: 
+ 464:             c.execute(
+ 465:                 '''
+ 466:                 INSERT INTO aday_olaylari
+ 467:                 (
+ 468:                     aday_id,
+ 469:                     tarih,
+ 470:                     olay_tipi,
+ 471:                     olay_metni,
+ 472:                     kaynak,
+ 473:                     kaynak_kayit_id,
+ 474:                     davet,
+ 475:                     randevu,
+ 476:                     plan,
+ 477:                     kayit,
+ 478:                     takip,
+ 479:                     hayir,
+ 480:                     is_ariyor,
+ 481:                     durum,
+ 482:                     created_at
+ 483:                 )
+ 484:                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ 485:                 ''',
+ 486:                 (
+ 487:                     profil_id,
+ 488:                     tarih or "",
+ 489:                     "Aday Kaydı",
+ 490:                     aciklama or "",
+ 491:                     "uygulama",
+ 492:                     eski_id,
+ 493:                     int(davet),
+ 494:                     int(randevu),
+ 495:                     int(plan),
+ 496:                     int(kayit),
+ 497:                     int(takip),
+ 498:                     int(hayir),
+ 499:                     int(is_ariyor),
+ 500:                     durum or "",
+ 501:                     now
+ 502:                 )
+ 503:             )
+ 504: 
+ 505:             c.commit()
+ 506:         return True
+ 507: 
+ 508:     except sqlite3.IntegrityError:
+ 509:         return False
+ 510: 
+ 511:     except Exception as e:
+ 512:         print(f"Aday ekleme hatası: {e}")
+ 513:         return False
+ 514: 
+ 515: def aday_sil(aday_id):
+ 516:     # Eski davranış korunuyor.
+ 517:     with _conn(ADAY_DB) as c:
+ 518:         c.execute(
+ 519:             "DELETE FROM adaylar WHERE id=?",
+ 520:             (aday_id,)
+ 521:         )
+ 522:         c.commit()
+ 523: 
+ 524: 
+ 525: def tum_adaylari_sil():
+ 526:     with _conn(ADAY_DB) as c:
+ 527:         c.execute("DELETE FROM adaylar")
+ 528:         c.commit()
+ 529: 
+ 530: 
+ 531: # ============================================================
+ 532: # Yeni Aday Kartı / Geçmiş sistemi
+ 533: # ============================================================
+ 534: 
+ 535: def aday_karti_getir(eski_aday_id):
+ 536:     """Eski aday ID'sinden kart bilgilerini getirir."""
+ 537:     with _conn(ADAY_DB) as c:
+ 538:         # 1. adaylar tablosundan ana kaydi al
+ 539:         eski = c.execute(
+ 540:             "SELECT * FROM adaylar WHERE id=?",
+ 541:             (eski_aday_id,)
+ 542:         ).fetchone()
+ 543: 
+ 544:         if not eski:
+ 545:             return None
+ 546: 
+ 547:         isim = eski["isim"] or ""
+ 548: 
+ 549:         # 2. Son durum: aday_olaylari'ndan
+ 550:         durum_row = c.execute("""
+ 551:             SELECT durum FROM aday_olaylari
+ 552:             WHERE kaynak_kayit_id = ?
+ 553:               AND durum IS NOT NULL
+ 554:               AND durum != ''
+ 555:             ORDER BY id DESC LIMIT 1
+ 556:         """, (eski_aday_id,)).fetchone()
+ 557: 
+ 558:         durum = durum_row["durum"] if durum_row else "\U0001F195 Yeni"
+ 559: 
+ 560:         # 3. Profil bilgileri (varsa)
+ 561:         profil = c.execute(
+ 562:             "SELECT * FROM aday_profil WHERE isim=? LIMIT 1",
+ 563:             (isim,)
+ 564:         ).fetchone()
+ 565: 
+ 566:         # 4. Gecmis olaylar
+ 567:         gecmis = []
+ 568:         try:
+ 569:             gecmis_rows = c.execute("""
+ 570:                 SELECT tarih, olay_tipi, olay_metni, durum
+ 571:                 FROM aday_olaylari
+ 572:                 WHERE kaynak_kayit_id = ?
+ 573:                 ORDER BY tarih DESC, id DESC
+ 574:                 LIMIT 50
+ 575:             """, (eski_aday_id,)).fetchall()
+ 576:             gecmis = [dict(r) for r in gecmis_rows]
+ 577:         except Exception:
+ 578:             gecmis = []
+ 579: 
+ 580:         def _get(row, key, default=None):
+ 581:             try:
+ 582:                 return row[key] if row and key in row.keys() else default
+ 583:             except Exception:
+ 584:                 return default
+ 585: 
+ 586:         return {
+ 587:             "id": eski["id"],
+ 588:             "isim": isim,
+ 589:             "tarih": _get(eski, "tarih", ""),
+ 590:             "aciklama": _get(eski, "aciklama", ""),
+ 591:             "davet": _get(eski, "davet", 0),
+ 592:             "randevu": _get(eski, "randevu", 0),
+ 593:             "plan": _get(eski, "plan", 0),
+ 594:             "kayit": _get(eski, "kayit", 0),
+ 595:             "takip": _get(eski, "takip", 0),
+ 596:             "hayir": _get(eski, "hayir", 0),
+ 597:             "is_ariyor": _get(eski, "is_ariyor", 0),
+ 598:             "linkedin_url": _get(eski, "linkedin_url", None),
+ 599:             "telefon": _get(profil, "telefon", ""),
+ 600:             "email": _get(profil, "email", ""),
+ 601:             "adres": _get(profil, "adres", ""),
+ 602:             "durum": durum,
+ 603:             "gecmis": gecmis
+ 604:         }
+ 605: 
+ 606: def aday_profil_guncelle(aday_id, telefon, email, adres):
+ 607:     """Aday profil bilgilerini gunceller (telefon, email, adres)."""
+ 608:     with _conn(ADAY_DB) as c:
+ 609:         # 1. Adayin ismini al
+ 610:         eski = c.execute(
+ 611:             "SELECT isim FROM adaylar WHERE id=?",
+ 612:             (aday_id,)
+ 613:         ).fetchone()
+ 614: 
+ 615:         if not eski:
+ 616:             return False
+ 617: 
+ 618:         isim = eski["isim"] or ""
+ 619:         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 620: 
+ 621:         # 2. Bu isimde profil var mi?
+ 622:         profil = c.execute(
+ 623:             "SELECT id FROM aday_profil WHERE isim=? LIMIT 1",
+ 624:             (isim,)
+ 625:         ).fetchone()
+ 626: 
+ 627:         if profil:
+ 628:             # 3a. Varsa guncelle
+ 629:             c.execute(
+ 630:                 """
+ 631:                 UPDATE aday_profil
+ 632:                 SET telefon=?, email=?, adres=?, updated_at=?
+ 633:                 WHERE id=?
+ 634:                 """,
+ 635:                 (telefon, email, adres, now, profil["id"])
+ 636:             )
+ 637:         else:
+ 638:             # 3b. Yoksa yeni olustur
+ 639:             c.execute(
+ 640:                 """
+ 641:                 INSERT INTO aday_profil
+ 642:                 (isim, telefon, email, adres, aktif, created_at, updated_at)
+ 643:                 VALUES (?, ?, ?, ?, 1, ?, ?)
+ 644:                 """,
+ 645:                 (isim, telefon, email, adres, now, now)
+ 646:             )
+ 647: 
+ 648:         c.commit()
+ 649:         return True
+ 650: 
+ 651: def aday_gelisme_ekle(
+ 652:     eski_aday_id,
+ 653:     tarih,
+ 654:     olay_tipi,
+ 655:     olay_metni,
+ 656:     durum="",
+ 657:     blok=0
+ 658: ):
+ 659:     with _conn(ADAY_DB) as c:
+ 660:         profil_id = _profil_id_eski_aday(eski_aday_id)
+ 661: 
+ 662:         if profil_id is None:
+ 663:             return False, "Aday bulunamadı."
+ 664: 
+ 665:         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 666: 
+ 667:         c.execute(
+ 668:             '''
+ 669:             INSERT INTO aday_olaylari
+ 670:             (
+ 671:                 aday_id,
+ 672:                 tarih,
+ 673:                 olay_tipi,
+ 674:                 olay_metni,
+ 675:                 kaynak,
+ 676:                 kaynak_kayit_id,
+ 677:                 davet,
+ 678:                 randevu,
+ 679:                 plan,
+ 680:                 kayit,
+ 681:                 takip,
+ 682:                 hayir,
+ 683:                 is_ariyor,
+ 684:                 durum,
+ 685:                 created_at
+ 686:             )
+ 687:             VALUES (?, ?, ?, ?, 'uygulama', ?, 0, 0, 0, 0, 0, 0, 0, ?, ?)
+ 688:             ''',
+ 689:             (
+ 690:                 profil_id,
+ 691:                 tarih or "",
+ 692:                 olay_tipi or "Not",
+ 693:                 olay_metni or "",
+ 694:                 eski_aday_id,
+ 695:                 durum or "",
+ 696:                 now
+ 697:             )
+ 698:         )
+ 699: 
+ 700:         # Durum verildiyse aday_profil.durum'u da guncelle
+ 701:         if durum and str(durum).strip():
+ 702:             try:
+ 703:                 isim_row = c.execute(
+ 704:                     "SELECT isim FROM adaylar WHERE id=?",
+ 705:                     (eski_aday_id,)
+ 706:                 ).fetchone()
+ 707: 
+ 708:                 if isim_row:
+ 709:                     try:
+ 710:                         isim = isim_row["isim"] if hasattr(isim_row, "keys") else isim_row[0]
+ 711:                     except Exception:
+ 712:                         isim = str(isim_row)
+ 713:                     isim = (isim or "").strip()
+ 714: 
+ 715:                     if isim:
+ 716:                         profil = c.execute(
+ 717:                             "SELECT id FROM aday_profil WHERE isim=? LIMIT 1",
+ 718:                             (isim,)
+ 719:                         ).fetchone()
+ 720: 
+ 721:                         if profil:
+ 722:                             try:
+ 723:                                 pid = profil["id"] if hasattr(profil, "keys") else profil[0]
+ 724:                             except Exception:
+ 725:                                 pid = profil
+ 726:                             c.execute(
+ 727:                                 "UPDATE aday_profil SET durum=?, updated_at=? WHERE id=?",
+ 728:                                 (durum, now, pid)
+ 729:                             )
+ 730:                         else:
+ 731:                             c.execute(
+ 732:                                 "INSERT INTO aday_profil (isim, telefon, email, adres, durum, aktif, created_at, updated_at) VALUES (?, '', '', '', ?, 1, ?, ?)",
+ 733:                                 (isim, durum, now, now)
+ 734:                             )
+ 735:             except Exception as e:
+ 736:                 print(f"Durum guncelleme hatasi: {e}")
+ 737: 
+ 738: 
+ 739:         # Blok işlemi
+ 740:         if blok == 1:
+ 741:             c.execute(
+ 742:                 "UPDATE adaylar SET blok=1, blok_tarihi=?, blok_notu=? WHERE id=?",
+ 743:                 (now, olay_metni or "", eski_aday_id)
+ 744:             )
+ 745: 
+ 746:         c.commit()
+ 747: 
+ 748:     return True, "Gelişme kaydedildi."
+ 749: 
+ 750: 
+ 751: # ============================================================
+ 752: # Chat İşlemleri
+ 753: # ============================================================
+ 754: 
+ 755: def _kategori_bul(mesaj, rol):
+ 756:     """Mesaji keyword bazli kategorize eder.
+ 757:     Kategoriler: sohbet, istatistik, sorgu, oneri, analiz
+ 758:     Oncelik sirasi: oneri > analiz > istatistik > sorgu > sohbet
+ 759:     """
+ 760:     if not mesaj:
+ 761:         return "sohbet"
+ 762: 
+ 763:     m = mesaj.lower()
+ 764:     # Turkce karakter normalizasyonu
+ 765:     tr_map = str.maketrans("İIıçşğüöÇŞĞÜÖ", "iiicsguoCSGUO")
+ 766:     m = mesaj.translate(tr_map).lower()
+ 767:     if rol == "assistant":
+ 768:         # Cevap icerigi bazli
+ 769:         if "oneri:" in m or "aksiyon:" in m:
+ 770:             return "oneri"
+ 771:         if any(k in m for k in ["funnel", "analiz", "trend", "oran", "donusum"]):
+ 772:             return "analiz"
+ 773:         return "sohbet"
+ 774: 
+ 775:     # Kullanici mesaji - ONERI once (daha guclu sinyal)
+ 776:     if any(k in m for k in ["degerlendir", "oner", "odaklan", "oncelik",
+ 777:                             "strateji", "planla", "yapalim", "yapmali",
+ 778:                             "ne yap", "nasil ilerle", "kimlere odak"]):
+ 779:         return "oneri"
+ 780:     # ANALIZ
+ 781:     if any(k in m for k in ["analiz", "funnel", "trend", "karsilastir", "rapor"]):
+ 782:         return "analiz"
+ 783:     # ISTATISTIK
+ 784:     if any(k in m for k in ["kac", "toplam", "sayi", "adet", "liste", "kactane"]):
+ 785:         return "istatistik"
+ 786:     # SORGU
+ 787:     if any(k in m for k in ["kim", "nerede", "hangi", "ne zaman", "baska", "neler"]):
+ 788:         return "sorgu"
+ 789:     return "sohbet"
+ 790: 
+ 791: 
+ 792: def chat_mesajlari_getir():
+ 793:     with _conn(CHAT_DB) as c:
+ 794:         rows = c.execute(
+ 795:             '''
+ 796:             SELECT rol, icerik, zaman, model, fallback, kategori
+ 797:             FROM sohbet_loglari
+ 798:             ORDER BY id ASC
+ 799:             '''
+ 800:         ).fetchall()
+ 801: 
+ 802:     return [
+ 803:         {
+ 804:             "role": r["rol"],
+ 805:             "content": r["icerik"],
+ 806:             "zaman": r["zaman"],
+ 807:             "model": r["model"],
+ 808:             "fallback": bool(r["fallback"]),
+ 809:             "kategori": r["kategori"] or "sohbet"
+ 810:         }
+ 811:         for r in rows
+ 812:     ]
+ 813: 
+ 814: 
+ 815: def chat_mesaj_ekle(
+ 816:     rol,
+ 817:     icerik,
+ 818:     model=None,
+ 819:     fallback=False,
+ 820:     kategori=None
+ 821: ):
+ 822:     # Kategori verilmediyse otomatik bul
+ 823:     if kategori is None:
+ 824:         kategori = _kategori_bul(icerik, rol)
+ 825: 
+ 826:     with _conn(CHAT_DB) as c:
+ 827:         c.execute(
+ 828:             '''
+ 829:             INSERT INTO sohbet_loglari
+ 830:             (rol, icerik, zaman, model, fallback, kategori)
+ 831:             VALUES (?, ?, ?, ?, ?, ?)
+ 832:             ''',
+ 833:             (
+ 834:                 rol,
+ 835:                 icerik,
+ 836:                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+ 837:                 model,
+ 838:                 int(bool(fallback)),
+ 839:                 kategori
+ 840:             )
+ 841:         )
+ 842:         c.commit()
+ 843: 
+ 844: 
+ 845: def chat_temizle():
+ 846:     with _conn(CHAT_DB) as c:
+ 847:         c.execute("DELETE FROM sohbet_loglari")
+ 848:         c.commit()
+ 849: 
+ 850: 
+ 851: 
+ 852: def aday_linkedin_guncelle(aday_id, linkedin_url):
+ 853:     """Adayin LinkedIn URL'sini gunceller."""
+ 854:     with _conn(ADAY_DB) as c:
+ 855:         c.execute(
+ 856:             "UPDATE adaylar SET linkedin_url=? WHERE id=?",
+ 857:             (linkedin_url, aday_id)
+ 858:         )
+ 859:         c.commit()
+ 860:         return c.total_changes > 0
+ 861: 
+ 862: 
+ 863: 
+ 864: def aday_durum_otomatik_guncelle(aday_id, davet=0, plan=0, kayit=0, hayir=0):
+ 865:     
+ 866:     """Checkbox'lara gore statuyu otomatik gunceller.
+ 867: 
+ 868:     v7 4C-2: DB'deki MEVCUT bayraklar da okunur. Boylece bir aday
+ 869:     once plan yapmis, sonra kayit yapmissa, kayit olayinda plan=0
+ 870:     gelse bile DB'de plan=1 kaldigi icin "plan+kayit -> SG" gecisi
+ 871:     dogru tetiklenir.
+ 872: 
+ 873:     Kurallar:
+ 874:     - Hayir -> Otomatik atama YOK (manuel secim: DeepFreeze veya Blok)
+ 875:     - Plan ✓ + Kayit ✓ -> 🎓 SG
+ 876:     - Plan ✓ + Kayit ✗ -> 🔔 Takip
+ 877:     - Plan ✗ + Davet ✓ -> 🟢 Aktif
+ 878:     """
+ 879:     with _conn(ADAY_DB) as c:
+ 880:         eski = c.execute(
+ 881:             "SELECT isim, davet, plan, kayit, hayir FROM adaylar WHERE id=?",
+ 882:             (aday_id,)
+ 883:         ).fetchone()
+ 884: 
+ 885:         if not eski:
+ 886:             return False
+ 887: 
+ 888:         isim = eski["isim"] or ""
+ 889: 
+ 890:         # DB'deki mevcut + bu olaydan gelen bayraklari OR ile birlestir
+ 891:         davet_t = max(int(eski["davet"] or 0), int(davet or 0))
+ 892:         plan_t  = max(int(eski["plan"]  or 0), int(plan  or 0))
+ 893:         kayit_t = max(int(eski["kayit"] or 0), int(kayit or 0))
+ 894:         hayir_t = max(int(eski["hayir"] or 0), int(hayir or 0))
+ 895: 
+ 896:         yeni_durum = None
+ 897:         if hayir_t == 1:
+ 898:             return False  # Manuel secim gerekli (DeepFreeze veya Blok)
+ 899:         if plan_t == 1 and kayit_t == 1:
+ 900:             yeni_durum = _statu_adi("sg")
+ 901:         elif plan_t == 1 and kayit_t == 0:
+ 902:             yeni_durum = _statu_adi("takip")
+ 903:         elif plan_t == 0 and davet_t == 1:
+ 904:             yeni_durum = _statu_adi("aktif")
+ 905:         else:
+ 906:             return False  # Statu degismedi
+ 907: 
+ 908:         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 909: 
+ 910:         profil = c.execute(
+ 911:             "SELECT id, durum FROM aday_profil WHERE isim=? LIMIT 1",
+ 912:             (isim,)
+ 913:         ).fetchone()
+ 914: 
+ 915:         # Zaten ayni statude ise bosuna yazma
+ 916:         if profil and profil["durum"] == yeni_durum:
+ 917:             return False
+ 918: 
+ 919:         if profil:
+ 920:             c.execute(
+ 921:                 "UPDATE aday_profil SET durum=?, updated_at=? WHERE id=?",
+ 922:                 (yeni_durum, now, profil["id"])
+ 923:             )
+ 924:         else:
+ 925:             c.execute(
+ 926:                 """
+ 927:                 INSERT INTO aday_profil
+ 928:                 (isim, telefon, email, adres, durum, aktif, created_at, updated_at)
+ 929:                 VALUES (?, '', '', '', ?, 1, ?, ?)
+ 930:                 """,
+ 931:                 (isim, yeni_durum, now, now)
+ 932:             )
+ 933:         c.commit()
+ 934:         print(f"Otomatik statu: {isim} -> {yeni_durum}")
+ 935:         return True
+ 936: 
+ 937: 
+ 938: def bloklu_adaylari_getir():
+ 939:     """Bloklanmis adaylari listeler (ana listede gizli olanlar)."""
+ 940:     with _conn(ADAY_DB) as c:
+ 941:         rows = c.execute("""
+ 942:             SELECT id, isim, tarih, blok_tarihi, blok_notu, linkedin_url
+ 943:             FROM adaylar
+ 944:             WHERE COALESCE(blok, 0) = 1
+ 945:             ORDER BY COALESCE(blok_tarihi, '') DESC, id DESC
+ 946:         """).fetchall()
+ 947:         return [dict(r) for r in rows]
+ 948: 
+ 949: 
+ 950: def aday_blok_kaldir(aday_id):
+ 951:     """Blok kaydini kaldirir (blok=0). Aday ana listeye doner."""
+ 952:     with _conn(ADAY_DB) as c:
+ 953:         c.execute("""
+ 954:             UPDATE adaylar
+ 955:             SET blok=0, blok_tarihi=NULL, blok_notu=NULL
+ 956:             WHERE id=?
+ 957:         """, (aday_id,))
+ 958:         c.commit()
+ 959:         return c.total_changes > 0
+
+  (959 satir)
+
+======================================================================
+  routes/chat.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\routes\chat.py
+======================================================================
+   1: import sqlite3
+   2: from flask import Blueprint, jsonify, request, Response
+   3: import json
+   4: import pandas as pd
+   5: from core.database import (chat_mesajlari_getir, chat_mesaj_ekle, chat_temizle,
+   6:                           adaylari_getir, aday_karti_getir)
+   7: from core.ollama_client import chat_stream, sistem_mesaji_olustur
+   8: from config import (ADAY_OLAY_LIMIT, ADAY_PROMPT_LIMIT, DEFAULT_MODEL,
+   9:                     DEFAULT_FALLBACK, PRIMARY_MODELS, ADAY_DB, ADAY_STATULERI)
+  10: 
+  11: bp = Blueprint("chat", __name__, url_prefix="/api/chat")
+  12: 
+  13: 
+  14: @bp.route("/gecmis", methods=["GET"])
+  15: def gecmis():
+  16:     return jsonify(chat_mesajlari_getir())
+  17: 
+  18: 
+  19: @bp.route("/temizle", methods=["POST"])
+  20: def temizle_route():
+  21:     chat_temizle()
+  22:     return jsonify({"ok": True})
+  23: 
+  24: 
+  25: @bp.route("/stream", methods=["POST"])
+  26: def stream():
+  27:     d = request.get_json() or {}
+  28:     kullanici_mesaji = d.get("mesaj", "").strip()
+  29:     # NOT: "fallback" frontend'den hic gonderilmiyor, bu yuzden None kalirdi.
+  30:     # None, chat_stream icinde ikinci modele dusulurken pydantic hatasiyla
+  31:     # cokerdi - "or DEFAULT_FALLBACK" ile garanti altina aliyoruz.
+  32:     #
+  33:     # v7 4C-BUG: Frontend bazen model="otomatik" gonderir. Bu ad Ollama'da
+  34:     # model olmadigi icin "model not found" hatasi cikar ve 7b'ye dusulur.
+  35:     # Whitelist kontrolu ile bilinmeyen adlar DEFAULT_MODEL'a cevrilir.
+  36:     model_ham = (d.get("model") or "").strip()
+  37:     if model_ham in PRIMARY_MODELS:
+  38:         model = model_ham
+  39:     else:
+  40:         model = DEFAULT_MODEL
+  41:         if model_ham and model_ham not in ("", "otomatik", "auto", "default"):
+  42:             print(f"[MODEL] Bilinmeyen model '{model_ham}' -> '{DEFAULT_MODEL}'")
+  43: 
+  44:     fallback = d.get("fallback") or DEFAULT_FALLBACK
+  45:     if fallback not in PRIMARY_MODELS:
+  46:         fallback = DEFAULT_FALLBACK
+  47: 
+  48:     if not kullanici_mesaji:
+  49:         return jsonify({"error": "Mesaj bos"}), 400
+  50: 
+  51:     # Kullanici mesajini kaydet
+  52:     chat_mesaj_ekle("user", kullanici_mesaji)
+  53: 
+  54:     # DB ozetini hazirla - istatistikler + her adayin son olaylari
+  55:     adaylar = adaylari_getir()
+  56:     if adaylar:
+  57:         df = pd.DataFrame(adaylar)
+  58:         cols = ["isim", "tarih", "aciklama", "davet", "randevu",
+  59:                 "plan", "kayit", "takip", "hayir", "is_ariyor"]
+  60:         cols = [c for c in cols if c in df.columns]
+  61:         toplam = len(df)
+  62: 
+  63:         def _s(k):
+  64:             try:
+  65:                 return int(df[k].fillna(0).sum())
+  66:             except Exception:
+  67:                 return 0
+  68: 
+  69:         # v8 4D: Statu-merkezli ozet (UI ile birebir uyumlu)
+  70:         statu_sayilari = {}
+  71:         for _s_item in ADAY_STATULERI:
+  72:             statu_sayilari[_s_item["tam"]] = 0
+  73:         statu_sayilari["(durum yok)"] = 0
+  74: 
+  75:         try:
+  76:             _conn_s = sqlite3.connect(str(ADAY_DB))
+  77:             _conn_s.row_factory = sqlite3.Row
+  78:             _c_s = _conn_s.cursor()
+  79:             _rows_s = _c_s.execute(
+  80:                 "SELECT durum, COUNT(*) AS adet FROM aday_profil GROUP BY durum"
+  81:             ).fetchall()
+  82:             for _r in _rows_s:
+  83:                 _d = (_r["durum"] or "").strip()
+  84:                 if _d in statu_sayilari:
+  85:                     statu_sayilari[_d] += _r["adet"]
+  86:                 else:
+  87:                     statu_sayilari["(durum yok)"] += _r["adet"]
+  88:             _conn_s.close()
+  89:         except Exception as _e:
+  90:             print(f"[UYARI] Statu dagilimi okunamadi: {_e}")
+  91: 
+  92:         _blok_sayisi = 0
+  93:         _toplam_gorunur = toplam
+  94:         try:
+  95:             _conn_b = sqlite3.connect(str(ADAY_DB))
+  96:             _c_b = _conn_b.cursor()
+  97:             _blok_sayisi = _c_b.execute(
+  98:                 "SELECT COUNT(*) FROM adaylar WHERE COALESCE(blok,0)=1"
+  99:             ).fetchone()[0]
+ 100:             _toplam_gorunur = _c_b.execute(
+ 101:                 "SELECT COUNT(*) FROM adaylar WHERE COALESCE(blok,0)=0"
+ 102:             ).fetchone()[0]
+ 103:             _conn_b.close()
+ 104:         except Exception:
+ 105:             pass
+ 106: 
+ 107:         basliklar = [
+ 108:             f"TOPLAM ADAY: {_toplam_gorunur} (bloklular haric)",
+ 109:             "STATU DAGILIMI:",
+ 110:         ]
+ 111:         for _s_item in ADAY_STATULERI:
+ 112:             if _s_item["kod"] == "blok":
+ 113:                 continue
+ 114:             basliklar.append(
+ 115:                 f"  {_s_item['tam']}: {statu_sayilari.get(_s_item['tam'], 0)}"
+ 116:             )
+ 117:         basliklar.append(f"  (Blok: {_blok_sayisi} - gizli)")
+ 118:         basliklar.append("")
+ 119:         basliklar.append(
+ 120:             f"DETAYLI LISTE (ilk {ADAY_PROMPT_LIMIT} aday, son gelismeleriyle):"
+ 121:         )
+ 122: 
+ 123:         # Her aday icin son N olayi ekle
+ 124:         satirlar = []
+ 125:         for i, aday in enumerate(df.head(ADAY_PROMPT_LIMIT).to_dict("records"), 1):
+ 126:             isim = aday.get("isim", "?")
+ 127:             try:
+ 128:                 kart = aday_karti_getir(aday.get("id"))
+ 129:                 if kart and kart.get("gecmis"):
+ 130:                     durum = kart.get("durum", "Aktif")
+ 131:                     satirlar.append(f"{i}. {isim} (durum: {durum})")
+ 132:                     for olay in kart["gecmis"][-ADAY_OLAY_LIMIT:]:
+ 133:                         tarih = olay.get("tarih", "")
+ 134:                         tip = olay.get("olay_tipi", "")
+ 135:                         metin = olay.get("olay_metni", "")
+ 136:                         metin_kisa = metin[:120] + ("..." if len(metin) > 120 else "")
+ 137:                         satirlar.append(f"   - {tarih} [{tip}]: {metin_kisa}")
+ 138:                 else:
+ 139:                     satirlar.append(f"{i}. {isim}")
+ 140:             except Exception:
+ 141:                 satirlar.append(f"{i}. {isim}")
+ 142: 
+ 143:         df_ozet = "\n".join(basliklar) + "\n" + "\n".join(satirlar)
+ 144:     else:
+ 145:         df_ozet = "(Veritabani bos)"
+ 146: 
+ 147:     # Mesaj gecmisini olustur
+ 148:     gecmis = chat_mesajlari_getir()
+ 149:     # Son 6 mesaj (3 soru + 3 cevap) - KV cache kirlenmesini onler
+ 150:     son_gecmis = gecmis[-6:] if len(gecmis) > 6 else gecmis
+ 151:     ollama_msgs = [sistem_mesaji_olustur(df_ozet)]
+ 152:     for m in son_gecmis:
+ 153:         ollama_msgs.append({"role": m["role"], "content": m["content"]})
+ 154: 
+ 155:     def generate():
+ 156:         toplam_yanit = ""
+ 157:         durum = {}
+ 158:         kesildi = False
+ 159:         try:
+ 160:             # Router: soru tipine gore model sec
+ 161:             model_secili = model if model else DEFAULT_MODEL  # Frontend'den gelen veya default
+ 162:             for parca in chat_stream(ollama_msgs, model=model_secili, fallback=fallback, durum=durum, profil="analiz"):
+ 163:                 toplam_yanit += parca
+ 164:                 yield f"data: {json.dumps({'t': parca}, ensure_ascii=False)}\n\n"
+ 165:             yield f"data: {json.dumps({'done': True, 'model': durum.get('model'), 'fallback': durum.get('fallback', False)}, ensure_ascii=False)}\n\n"
+ 166:         except GeneratorExit:
+ 167:             kesildi = True
+ 168:             raise
+ 169:         except Exception as e:
+ 170:             yield f"data: {json.dumps({'err': str(e)}, ensure_ascii=False)}\n\n"
+ 171:         finally:
+ 172:             if toplam_yanit and not kesildi:
+ 173:                 chat_mesaj_ekle("assistant", toplam_yanit, model=durum.get("model"), fallback=durum.get("fallback", False))
+ 174: 
+ 175:     return Response(generate(), mimetype="text/event-stream")
+
+  (175 satir)
+
+======================================================================
+  routes/candidates.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\routes\candidates.py
+======================================================================
+   1: ﻿import sqlite3
+   2: from flask import Blueprint, jsonify, request
+   3: from config import ADAY_DB, OLAY_TIPLERI
+   4: 
+   5: from core.database import (
+   6:     aday_durum_otomatik_guncelle,
+   7:     adaylari_getir,
+   8:     aday_ekle,
+   9:     aday_sil,
+  10:     tum_adaylari_sil,
+  11:     aday_karti_getir,
+  12:     aday_profil_guncelle,
+  13:     aday_gelisme_ekle
+  14: )
+  15: 
+  16: bp = Blueprint(
+  17:     "candidates",
+  18:     __name__,
+  19:     url_prefix="/api/candidates"
+  20: )
+  21: 
+  22: 
+  23: @bp.route("", methods=["GET"])
+  24: def listele():
+  25:     return jsonify(adaylari_getir())
+  26: 
+  27: 
+  28: @bp.route("", methods=["POST"])
+  29: def ekle():
+  30:     d = request.get_json() or {}
+  31: 
+  32:     ok = aday_ekle(
+  33:         d.get("isim", ""),
+  34:         d.get("tarih", ""),
+  35:         d.get("aciklama", ""),
+  36:         d.get("davet", 0),
+  37:         d.get("randevu", 0),
+  38:         d.get("plan", 0),
+  39:         d.get("kayit", 0),
+  40:         d.get("takip", 0),
+  41:         d.get("hayir", 0),
+  42:         d.get("is_ariyor", 0),
+  43:         linkedin_url=d.get("linkedin_url", None),
+  44:         durum=d.get("durum", "")
+  45:     )
+  46: 
+  47:     return jsonify({"ok": ok})
+  48: 
+  49: @bp.route("/<int:aday_id>", methods=["GET"])
+  50: def kart(aday_id):
+  51:     data = aday_karti_getir(aday_id)
+  52: 
+  53:     if data is None:
+  54:         return jsonify({
+  55:             "ok": False,
+  56:             "error": "Aday bulunamadı."
+  57:         }), 404
+  58: 
+  59:     return jsonify({
+  60:         "ok": True,
+  61:         "data": data
+  62:     })
+  63: 
+  64: 
+  65: @bp.route("/<int:aday_id>/profil", methods=["PUT"])
+  66: def profil_guncelle(aday_id):
+  67:     d = request.get_json() or {}
+  68: 
+  69:     ok = aday_profil_guncelle(
+  70:         aday_id,
+  71:         d.get("telefon", ""),
+  72:         d.get("email", ""),
+  73:         d.get("adres", "")
+  74:     )
+  75: 
+  76:     if not ok:
+  77:         return jsonify({
+  78:             "ok": False,
+  79:             "error": "Aday profili bulunamadı."
+  80:         }), 404
+  81: 
+  82:     return jsonify({
+  83:         "ok": True,
+  84:         "message": "Aday bilgileri güncellendi."
+  85:     })
+  86: 
+  87: 
+  88: @bp.route("/<int:aday_id>/gelisme", methods=["POST"])
+  89: def gelisme_ekle(aday_id):
+  90:     d = request.get_json() or {}
+  91:     
+  92:     tarih = str(d.get("tarih", "")).strip()
+  93:     olay_tipi = str(d.get("olay_tipi", "Not")).strip()
+  94:     olay_metni = str(d.get("olay_metni", "")).strip()
+  95:     durum = str(d.get("durum", "")).strip()
+  96:     
+  97:     
+  98:     # YENI: Randevu tarihi/saati
+  99:     randevu_tarihi = str(d.get("randevu_tarihi", "")).strip()
+ 100:     randevu_saati = str(d.get("randevu_saati", "")).strip()
+ 101:     
+ 102:     if not olay_metni and olay_tipi not in ("Sadece Durum Değiştir", "Durum Değişikliği"):
+ 103:         return jsonify({"ok": False, "error": "Gelisme aciklamasi bos."}), 400
+ 104:     
+ 105:     # Blok çıkarımı: durum "Blok" içeriyorsa blok=1
+ 106:     blok_param = 0
+ 107:     if durum and ("blok" in durum.lower() or "⛔" in durum):
+ 108:         blok_param = 1
+ 109: 
+ 110:     ok, msg = aday_gelisme_ekle(
+ 111:         aday_id, tarih, olay_tipi, olay_metni, durum, blok_param
+ 112:     )
+ 113:     
+ 114:     if not ok:
+ 115:         return jsonify({"ok": False, "error": msg}), 404
+ 116:     
+ 117:     # ═══════════════════════════════════════════════════════════
+ 118:     # OLAY TIPINDEN CHECKBOX CIKARIMI
+ 119:     # ═══════════════════════════════════════════════════════════
+ 120:         
+ 121:     davet = 0
+ 122:     plan = 0
+ 123:     kayit = 0
+ 124:     hayir = 0
+ 125:     takip = 0
+ 126:     randevu = 0
+ 127:     # ═══════════════════════════════════════════════════════════
+ 128:     # OLAY TIPINDEN CHECKBOX CIKARIMI (config.OLAY_TIPLERI'ndan)
+ 129:     # ═══════════════════════════════════════════════════════════
+ 130:     # RANDEVU TARIHI/SAATI DOLUYSA randevu=1
+ 131:     if randevu_tarihi or randevu_saati:
+ 132:         randevu = 1
+ 133:     
+ 134:     metin = olay_metni.lower()
+ 135:     
+ 136:     # OLAY TIPINDEN (birincil) — HTML value ile birebir eslesir
+ 137:     for _t in OLAY_TIPLERI:
+ 138:         if _t["html_value"] == olay_tipi:
+ 139:             _b = _t["bayrak"]
+ 140:             if _b == "davet":
+ 141:                 davet = 1
+ 142:             elif _b == "plan":
+ 143:                 plan = 1
+ 144:             elif _b == "takip":
+ 145:                 takip = 1
+ 146:             elif _b == "kayit":
+ 147:                 kayit = 1
+ 148:             elif _b == "hayir":
+ 149:                 hayir = 1
+ 150:             break
+ 151:     
+ 152:     # METINDEN (ikincil - fallback) — kullanicinin serbest metnine gore
+ 153:     if "plan anlatıldı" in metin or "plan anlatildi" in metin:
+ 154:         plan = 1
+ 155:     if "kayıt yapıldı" in metin or "kayit yapildi" in metin or "kayıt oldu" in metin or "kayit oldu" in metin:
+ 156:         kayit = 1
+ 157:     if "davet yapıldı" in metin or "davet yapildi" in metin:
+ 158:         davet = 1
+ 159:     if "hayır dedi" in metin or "hayir dedi" in metin or "reddetti" in metin:
+ 160:         hayir = 1
+ 161:     if "randevu oluştu" in metin or "randevu olustu" in metin:
+ 162:         randevu = 1    
+ 163: 
+ 164:     
+ 165:     # ═══════════════════════════════════════════════════════════
+ 166:     # adaylar tablosunu guncelle
+ 167:     # ═══════════════════════════════════════════════════════════
+ 168:     try:
+ 169:         conn = sqlite3.connect(str(ADAY_DB))
+ 170:         c = conn.cursor()
+ 171:         
+ 172:         updates = []
+ 173:         params = []
+ 174:         if davet == 1:
+ 175:             updates.append("davet = 1")
+ 176:         if plan == 1:
+ 177:             updates.append("plan = 1")
+ 178:         if kayit == 1:
+ 179:             updates.append("kayit = 1")
+ 180:         if hayir == 1:
+ 181:             updates.append("hayir = 1")
+ 182:         if takip == 1:
+ 183:             updates.append("takip = 1")
+ 184:         if randevu == 1:
+ 185:             updates.append("randevu = 1")
+ 186:         if randevu_tarihi:
+ 187:             updates.append("randevu_tarihi = ?")
+ 188:             params.append(randevu_tarihi)
+ 189:         if randevu_saati:
+ 190:             updates.append("randevu_saati = ?")
+ 191:             params.append(randevu_saati)
+ 192:         
+ 193:         if updates:
+ 194:             sql = f"UPDATE adaylar SET {', '.join(updates)} WHERE id = ?"
+ 195:             params.append(aday_id)
+ 196:             c.execute(sql, tuple(params))
+ 197:             conn.commit()
+ 198:             print(f"[SYNC] Aday {aday_id} -> {updates}")
+ 199:         else:
+ 200:             print(f"[SYNC] Aday {aday_id} -> degisiklik yok")
+ 201:         
+ 202:         conn.close()
+ 203:     except Exception as e:
+ 204:         print(f"[UYARI] Checkbox sync hatasi: {e}")
+ 205:     
+ 206:     # ═══════════════════════════════════════════════════════════
+ 207:     # OTOMATIK STATU GECISI
+ 208:     # ═══════════════════════════════════════════════════════════
+ 209:     try:
+ 210:         from core.database import aday_durum_otomatik_guncelle
+ 211:         aday_durum_otomatik_guncelle(
+ 212:             aday_id,
+ 213:             davet=davet, plan=plan, kayit=kayit, hayir=hayir
+ 214:         )
+ 215:     except Exception as e:
+ 216:         print(f"[UYARI] Otomatik statu hatasi: {e}")
+ 217:     
+ 218:     return jsonify({"ok": True, "message": msg})
+ 219: 
+ 220: 
+ 221: @bp.route("/<int:aday_id>", methods=["DELETE"])
+ 222: def sil(aday_id):
+ 223:     aday_sil(aday_id)
+ 224:     return jsonify({"ok": True})
+ 225: 
+ 226: 
+ 227: @bp.route("/hepsi", methods=["DELETE"])
+ 228: def hepsini_sil():
+ 229:     tum_adaylari_sil()
+ 230:     return jsonify({"ok": True})
+ 231: 
+ 232: 
+ 233: 
+ 234: @bp.route("/<int:aday_id>/linkedin", methods=["PUT"])
+ 235: def linkedin_guncelle(aday_id):
+ 236:     """Adayin LinkedIn URL'sini gunceller."""
+ 237:     from core.database import aday_linkedin_guncelle
+ 238:     d = request.get_json() or {}
+ 239:     linkedin_url = str(d.get("linkedin_url", "")).strip()
+ 240: 
+ 241:     if not linkedin_url:
+ 242:         return jsonify({"ok": False, "error": "URL bos olamaz."}), 400
+ 243: 
+ 244:     ok = aday_linkedin_guncelle(aday_id, linkedin_url)
+ 245: 
+ 246:     if not ok:
+ 247:         return jsonify({"ok": False, "error": "Aday bulunamadi."}), 404
+ 248: 
+ 249:     return jsonify({"ok": True, "message": "LinkedIn URL guncellendi."})
+ 250: 
+ 251: 
+ 252: 
+ 253: @bp.route("/<int:aday_id>/otomatik-durum", methods=["POST"])
+ 254: def otomatik_durum(aday_id):
+ 255:     """Checkbox'lara gore statuyu otomatik gunceller."""
+ 256:     d = request.get_json() or {}
+ 257:     
+ 258:     degisti = aday_durum_otomatik_guncelle(
+ 259:         aday_id,
+ 260:         davet=int(d.get("davet", 0)),
+ 261:         plan=int(d.get("plan", 0)),
+ 262:         kayit=int(d.get("kayit", 0)),
+ 263:         hayir=int(d.get("hayir", 0))
+ 264:     )
+ 265:     
+ 266:     return jsonify({"ok": True, "degisti": degisti})
+ 267: 
+ 268: 
+ 269: @bp.route("/bloklu", methods=["GET"])
+ 270: def bloklu_listele():
+ 271:     """Bloklu adaylari listeler (ana listede gizli)."""
+ 272:     from core.database import bloklu_adaylari_getir
+ 273:     return jsonify(bloklu_adaylari_getir())
+ 274: 
+ 275: 
+ 276: @bp.route("/<int:aday_id>/blok-kaldir", methods=["PUT"])
+ 277: def blok_kaldir(aday_id):
+ 278:     """Blok kaydini kaldirir, aday ana listeye doner."""
+ 279:     from core.database import aday_blok_kaldir
+ 280:     ok = aday_blok_kaldir(aday_id)
+ 281:     if not ok:
+ 282:         return jsonify({"ok": False, "error": "Aday bulunamadi."}), 404
+ 283:     return jsonify({"ok": True, "message": "Blok kaldirildi."})
+
+  (283 satir)
+
+======================================================================
+  routes/metrics.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\routes\metrics.py
+======================================================================
+   1: from flask import Blueprint, jsonify
+   2: import pandas as pd
+   3: from datetime import datetime
+   4: from core.database import adaylari_getir
+   5: from core.ollama_client import chat_stream
+   6: from config import DEFAULT_MODEL, DEFAULT_FALLBACK
+   7: 
+   8: bp = Blueprint("metrics", __name__, url_prefix="/api/metrics")
+   9: 
+  10: 
+  11: def _huni_hesapla(adaylar):
+  12:     """Kaba listeden kayda kadar GERÇEK huni (bir onceki adima gore %).
+  13:     Bu rakamlar LLM'e DOGRU VERI olarak verilir - LLM kendi hesaplamaz,
+  14:     hesaplanmis rakami yorumlar (halusinasyonu engeller)."""
+  15:     toplam = len(adaylar)
+  16: 
+  17:     def s(k):
+  18:         return sum(int(a.get(k) or 0) for a in adaylar)
+  19: 
+  20:     davet, randevu, plan = s('davet'), s('randevu'), s('plan')
+  21:     kayit, takip, hayir = s('kayit'), s('takip'), s('hayir')
+  22:     is_ariyor = s('is_ariyor')
+  23: 
+  24:     def oran(pay, payda):
+  25:         return round(pay / payda * 100, 1) if payda else 0.0
+  26: 
+  27:     # Hala surecte olan (ne kayit oldu ne red aldi)
+  28:     aktif_takipte = sum(
+  29:         1 for a in adaylar
+  30:         if not int(a.get('kayit') or 0) and not int(a.get('hayir') or 0)
+  31:     )
+  32: 
+  33:     return {
+  34:         "toplam": toplam,
+  35:         "davet": davet, "randevu": randevu, "plan": plan,
+  36:         "kayit": kayit, "takip": takip, "hayir": hayir,
+  37:         "is_ariyor": is_ariyor,
+  38:         "aktif_takipte": aktif_takipte,
+  39:         # Zincirdeki her adimin BIR ONCEKI adima gore donusum orani
+  40:         "oran_kabadan_davete": oran(davet, toplam),
+  41:         "oran_davetten_randevuya": oran(randevu, davet),
+  42:         "oran_randevudan_plana": oran(plan, randevu),
+  43:         "oran_plandan_kayda": oran(kayit, plan),
+  44:         # Ucdan uca: kaba listeden kayda genel basari orani
+  45:         "oran_uctan_uca": oran(kayit, toplam),
+  46:         "oran_red": oran(hayir, toplam),
+  47:         # Eskiye uyumluluk
+  48:         "davet_randevu_oran": oran(randevu, davet),
+  49:         "plan_kayit_oran": oran(kayit, plan),
+  50:     }
+  51: 
+  52: 
+  53: def _riskli_adaylar(adaylar, limit=10):
+  54:     """Randevusu/plani olup kayit veya red almamis, en uzun suredir
+  55:     temassiz kalan adaylar - 'olasilik dusuren' somut sinyal.
+  56:     Tarih formati tutarsiz olabilecegi icin pd.to_datetime ile esnek parse."""
+  57:     aktif = [
+  58:         a for a in adaylar
+  59:         if not int(a.get('kayit') or 0) and not int(a.get('hayir') or 0)
+  60:     ]
+  61:     for a in aktif:
+  62:         a['_tarih_dt'] = pd.to_datetime(a.get('tarih'), dayfirst=True, errors='coerce')
+  63: 
+  64:     gecerli = [a for a in aktif if pd.notna(a['_tarih_dt'])]
+  65:     gecerli.sort(key=lambda a: a['_tarih_dt'])
+  66: 
+  67:     bugun = pd.Timestamp.now()
+  68:     sonuc = []
+  69:     for a in gecerli[:limit]:
+  70:         gun = (bugun - a['_tarih_dt']).days
+  71:         sonuc.append({
+  72:             "isim": a.get("isim", "?"),
+  73:             "gun_sayisi": int(gun),
+  74:             "asama": ("plan" if a.get('plan') else
+  75:                       "randevu" if a.get('randevu') else
+  76:                       "davet" if a.get('davet') else "kaba liste"),
+  77:         })
+  78:     return sonuc
+  79: 
+  80: 
+  81: @bp.route("", methods=["GET"])
+  82: def hesapla():
+  83:     adaylar = adaylari_getir()
+  84:     if not adaylar:
+  85:         return jsonify({"toplam": 0})
+  86:     return jsonify(_huni_hesapla(adaylar))
+  87: 
+  88: 
+  89: @bp.route("/ozet", methods=["POST"])
+  90: def ozet():
+  91:     """Girislerden (huni verisi + temassizlik suresi) CALISMA STRATEJISI,
+  92:     OLASILIK degerlendirmesi ve haftalik iletisim plani uretir.
+  93:     Rakamlar Python'da hesaplanir (asla LLM'e hesaplatilmaz), LLM sadece
+  94:     bu dogrulanmis verileri yorumlayip somut bir eylem plani cikarir."""
+  95:     adaylar = adaylari_getir()
+  96:     if not adaylar:
+  97:         return jsonify({"ozet": "Veritabanı boş, henüz bir strateji çıkarılamaz."})
+  98: 
+  99:     h = _huni_hesapla(adaylar)
+ 100:     riskli = _riskli_adaylar(adaylar, limit=10)
+ 101: 
+ 102:     riskli_satir = "\n".join(
+ 103:         f"  - {r['isim']}: {r['gun_sayisi']} gündür temassız (aşama: {r['asama']})"
+ 104:         for r in riskli
+ 105:     ) or "  (temassızlık verisi yok)"
+ 106: 
+ 107:     bugun_str = datetime.now().strftime("%Y-%m-%d (%A)")
+ 108: 
+ 109:     prompt = f"""# ROLE
+ 110: You are a network-marketing recruiting pipeline strategist. The business goal is NOT just "more invites" — it is moving people through: kaba liste (raw list) -> davet (invited) -> randevu (meeting set, 1:1 or Zoom) -> plan (business plan presented) -> kayit (registered) -> başlatma toplantısı (kickoff meeting). Once someone registers AND has their kickoff meeting, they stop being a "candidate" and become a business partner.
+ 111: 
+ 112: # VERIFIED FUNNEL DATA (bugün: {bugun_str}) — bu rakamlar kesindir, yeniden hesaplama, sadece yorumla
+ 113: Toplam kaba liste: {h['toplam']}
+ 114: Davet: {h['davet']}  (kaba listeden davete dönüşüm: %{h['oran_kabadan_davete']})
+ 115: Randevu: {h['randevu']}  (davetten randevuya dönüşüm: %{h['oran_davetten_randevuya']})
+ 116: Plan sunumu: {h['plan']}  (randevudan plana dönüşüm: %{h['oran_randevudan_plana']})
+ 117: Kayıt: {h['kayit']}  (plandan kayda dönüşüm: %{h['oran_plandan_kayda']})
+ 118: Uçtan uca (kaba listeden kayda) genel başarı oranı: %{h['oran_uctan_uca']}
+ 119: Red (hayır) oranı: %{h['oran_red']}
+ 120: Hâlâ süreçte olan (ne kayıt ne red): {h['aktif_takipte']}
+ 121: 
+ 122: # EN UZUN SÜREDİR TEMASSIZ KALAN ADAYLAR (öncelik sinyali — kesin veri)
+ 123: {riskli_satir}
+ 124: 
+ 125: # TASK
+ 126: In TURKISH, produce exactly three short sections:
+ 127: 
+ 128: 1. **Huni Durumu** — Hangi adımda darboğaz var (en düşük dönüşüm oranına sahip adım) tek-iki cümle, rakamlarla.
+ 129: 2. **Öncelikli Adaylar (Olasılık Değerlendirmesi)** — Yukarıdaki temassızlık listesinden somut isimlerle, hangisiyle NEDEN şimdi ilgilenilmeli (örn. "X, randevu aşamasında 9 gündür temassız — sıcaklığı kaybetme riski yüksek, bugün aranmalı").
+ 130: 3. **Haftalık İletişim Planı** — 7 güne yayılmış, somut ve kısa bir öneri (örn. "Pazartesi: risk listesindeki ilk 3 kişiye takip mesajı, Çarşamba: randevusu olup plan sunumu yapılmamışlara hatırlatma...").
+ 131: 
+ 132: Be concise and decision-ready — toplam 10-12 satırı geçme. Rakam uydurma, sadece yukarıdaki verilen rakamları kullan. No markdown headers beyond the three bold section titles above."""
+ 133: 
+ 134:     try:
+ 135:         metin = ""
+ 136:         for parca in chat_stream([{"role": "user", "content": prompt}],
+ 137:                                   model=DEFAULT_MODEL, fallback=DEFAULT_FALLBACK,
+ 138:                                   profil="analiz"):
+ 139:             metin += parca
+ 140:         return jsonify({"ozet": metin.strip(), "huni": h})
+ 141:     except Exception as e:
+ 142:         return jsonify({"ozet": f"Strateji oluşturulamadı: {e}"}), 500
+
+  (142 satir)
+
+======================================================================
+  app.py
+  C:\AI_YEREL\LiNKEDiN_TAKiP\app.py
+======================================================================
+   1: import threading
+   2: import time
+   3: import webbrowser
+   4: from pathlib import Path
+   5: 
+   6: from flask import Flask, render_template, jsonify, request
+   7: from watchdog.observers import Observer
+   8: from watchdog.events import FileSystemEventHandler
+   9: from routes.system import bp as system_bp
+  10: 
+  11: from config import (FLASK_HOST, FLASK_PORT, FLASK_DEBUG,
+  12:                     IZLENEN_EXCEL, DATA_DIR, DEFAULT_MODEL)
+  13: from core import database, ollama_client
+  14: from core.excel_io import excel_ice_aktar
+  15: 
+  16: from routes.candidates import bp as candidates_bp
+  17: from routes.excel import bp as excel_bp
+  18: from routes.chat import bp as chat_bp
+  19: from routes.metrics import bp as metrics_bp
+  20: from routes.keep import bp as keep_bp
+  21: from routes.word import bp as word_bp
+  22: 
+  23: app = Flask(__name__, template_folder="templates", static_folder="static")
+  24: 
+  25: app.register_blueprint(system_bp)
+  26: app.register_blueprint(candidates_bp)
+  27: app.register_blueprint(excel_bp)
+  28: app.register_blueprint(chat_bp)
+  29: app.register_blueprint(metrics_bp)
+  30: app.register_blueprint(keep_bp)
+  31: app.register_blueprint(word_bp)
+  32: 
+  33: 
+  34: class ExcelHandler(FileSystemEventHandler):
+  35:     def __init__(self):
+  36:         self._son = 0
+  37: 
+  38:     def _islen(self, event, yol=None):
+  39:         if event.is_directory:
+  40:             return
+  41:         kontrol_yolu = yol or event.src_path
+  42:         if Path(kontrol_yolu).name != IZLENEN_EXCEL.name:
+  43:             return
+  44:         simdi = time.time()
+  45:         if simdi - self._son < 2:
+  46:             return
+  47:         self._son = simdi
+  48:         print(f"\n Excel degisti: {kontrol_yolu}")
+  49:         ok, msg = excel_ice_aktar(IZLENEN_EXCEL)
+  50:         print(f"   -> {msg}")
+  51: 
+  52:     def on_modified(self, event):
+  53:         self._islen(event)
+  54: 
+  55:     def on_created(self, event):
+  56:         self._islen(event)
+  57: 
+  58:     def on_moved(self, event):
+  59:         if hasattr(event, "dest_path") and Path(event.dest_path).name == IZLENEN_EXCEL.name:
+  60:             self._islen(event, yol=event.dest_path)
+  61: 
+  62: 
+  63: def watcher_baslat():
+  64:     DATA_DIR.mkdir(exist_ok=True)
+  65:     obs = Observer()
+  66:     obs.schedule(ExcelHandler(), str(DATA_DIR), recursive=False)
+  67:     obs.daemon = True
+  68:     obs.start()
+  69:     print(f"Izleniyor: {IZLENEN_EXCEL}")
+  70: 
+  71: 
+  72: @app.route("/")
+  73: def index():
+  74:     return render_template("index.html")
+  75: 
+  76: 
+  77: @app.route("/chat")
+  78: def chat_page():
+  79:     return render_template("chat.html")
+  80: 
+  81: 
+  82: @app.route("/metrics")
+  83: def metrics_page():
+  84:     return render_template("metrics.html")
+  85: 
+  86: 
+  87: @app.route("/api/ollama/durum")
+  88: def ollama_durum():
+  89:     return jsonify(ollama_client.durum_ozeti())
+  90: 
+  91: 
+  92: @app.route("/api/ollama/warmup", methods=["POST"])
+  93: def ollama_warmup():
+  94:     from config import PRIMARY_MODELS
+  95:     d = request.get_json() or {}
+  96:     istenen = (d.get("model") or "").strip()
+  97:     # v7 4C-4: bilinmeyen model adi DEFAULT_MODEL'a cevrilir
+  98:     m = istenen if istenen in PRIMARY_MODELS else DEFAULT_MODEL
+  99:     ok = ollama_client.warm_up(m)
+ 100:     return jsonify({"ok": ok, "model": m})
+ 101: 
+ 102: 
+ 103: def _arka_plan():
+ 104:     print("Ollama warm-up basliyor...")
+ 105:     ollama_client.warm_up(DEFAULT_MODEL)
+ 106: 
+ 107:     if IZLENEN_EXCEL.exists():
+ 108:         print("Mevcut Excel dosyasi bulundu, ice aktariliyor...")
+ 109:         ok, msg = excel_ice_aktar(IZLENEN_EXCEL)
+ 110:         print(f"   -> {msg}")
+ 111: 
+ 112:         # Açılış bildirimi için sonucu kaydet
+ 113:         try:
+ 114:             import re
+ 115:             from routes.excel import durum_guncelle
+ 116:             m = re.search(r"(\d+) yeni aday eklendi, (\d+) zaten mevcuttu", msg)
+ 117:             if m:
+ 118:                 durum_guncelle(int(m.group(1)), int(m.group(2)), msg)
+ 119:             else:
+ 120:                 durum_guncelle(0, 0, msg)
+ 121:         except Exception as e:
+ 122:             print(f"   (bildirim kaydi hatasi: {e})")
+ 123: 
+ 124: 
+ 125:     print("Excel watcher baslatiliyor...")
+ 126:     watcher_baslat()
+ 127:     print("Arka plan isleri tamamlandi.")
+ 128: 
+ 129: 
+ 130: def _tarayici_ac():
+ 131:     time.sleep(2)
+ 132:     try:
+ 133:         webbrowser.open(f"http://{FLASK_HOST}:{FLASK_PORT}")
+ 134:         print(f"Tarayici acildi: http://{FLASK_HOST}:{FLASK_PORT}")
+ 135:     except Exception as e:
+ 136:         print(f"Tarayici acilamadi: {e}")
+ 137: 
+ 138: 
+ 139: if __name__ == "__main__":
+ 140:     print("Veritabanlari hazirlaniyor...")
+ 141:     database.init_all()
+ 142: 
+ 143:     threading.Thread(target=_arka_plan, daemon=True).start()
+ 144:     threading.Thread(target=_tarayici_ac, daemon=True).start()
+ 145: 
+ 146:     print(f"\nFlask basliyor: http://{FLASK_HOST}:{FLASK_PORT}\n")
+ 147:     app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG, threaded=True)
+
+  (147 satir)
+
+======================================================================
+  Baslat.bat
+  C:\AI_YEREL\LiNKEDiN_TAKiP\Baslat.bat
+======================================================================
+   1: @echo off
+   2: chcp 65001 >nul
+   3: title LinkedIn Takip - Flask
+   4: color 0A
+   5: 
+   6: echo ================================================
+   7: echo   LinkedIn Takip Asistani (Flask)
+   8: echo ================================================
+   9: 
+  10: set OLLAMA_EXE=C:\AI_IPEX\Ollama\portable\ollama.exe
+  11: set OLLAMA_KEEP_ALIVE=24h
+  12: 
+  13: if not exist "%OLLAMA_EXE%" (
+  14:     echo [UYARI] IPEX Ollama bulunamadi: %OLLAMA_EXE%
+  15:     echo         Standart Ollama ile devam edilecek, Intel Arc hizlandirmasi CALISMAYACAK.
+  16:     set OLLAMA_EXE=ollama
+  17: )
+  18: 
+  19: REM ============================================================
+  20: REM  IPEX-LLM RESMI DOKUMANINDAKI TUM GEREKLI AYARLAR
+  21: REM  Kaynak: ipex-llm.readthedocs.io Ollama Quickstart
+  22: REM ============================================================
+  23: 
+  24: REM 1. EN ONEMLI: Tum katmanlari GPU'ya yukle (yoksa bazi katmanlar CPU'da kalir)
+  25: set OLLAMA_NUM_GPU=999
+  26: 
+  27: REM 2. IPEX'in hangi GPU'yu kullanacagi (0=iGPU, 1=dGPU/Arc)
+  28: REM    Eger sistemde sadece 1 GPU varsa 0 yapin
+  29: set ONEAPI_DEVICE_SELECTOR=level_zero:0
+  30: 
+  31: REM 3. IPEX LLM icin zorunlu sistem ayarlari
+  32: set ZES_ENABLE_SYSMAN=1
+  33: set SYCL_CACHE_PERSISTENT=1
+  34: set SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=1
+  35: set IPEX_LLM_NUM_CTX=8192
+  36: set OLLAMA_CONTEXT_LENGTH=8192
+  37: 
+  38: REM 5. Proxy'yi devre disi birak (localhost baglantilari icin)
+  39: set no_proxy=localhost,127.0.0.1
+  40: set NO_PROXY=localhost,127.0.0.1
+  41: 
+  42: REM 6. Ollama sunucu ayarlari
+  43: set OLLAMA_HOST=127.0.0.1:11434
+  44: set OLLAMA_NUM_PARALLEL=1
+  45: set OLLAMA_KEEP_ALIVE=24h
+  46: set OLLAMA_MAX_LOADED_MODELS=1
+  47: set OLLAMA_FLASH_ATTENTION=false
+  48: 
+  49: echo [0/4] IPEX ortam degiskenleri ayarlandi:
+  50: echo        OLLAMA_NUM_GPU = %OLLAMA_NUM_GPU%  (tum katmanlar GPU'da)
+  51: echo        ONEAPI_DEVICE_SELECTOR = %ONEAPI_DEVICE_SELECTOR%
+  52: echo        Kullanilan Ollama: %OLLAMA_EXE%
+  53: 
+  54: taskkill /f /im ollama.exe >nul 2>&1
+  55: taskkill /f /im ollama-lib.exe >nul 2>&1
+  56: taskkill /f /im "ollama app.exe" >nul 2>&1
+  57: timeout /t 2 /nobreak >nul
+  58: 
+  59: echo [1/4] Ollama (IPEX) baslatiliyor...
+  60: start "Ollama-IPEX" /min cmd /c ""%OLLAMA_EXE%" serve"
+  61: 
+  62: echo [2/4] Ollama portu bekleniyor (max 45 sn)...
+  63: set /a n=0
+  64: :W
+  65: timeout /t 1 /nobreak >nul
+  66: powershell -NoProfile -Command "try { (New-Object Net.Sockets.TcpClient).Connect('127.0.0.1',11434); exit 0 } catch { exit 1 }" >nul 2>&1
+  67: if %errorlevel%==0 goto OLLAMA_HAZIR
+  68: set /a n+=1
+  69: if %n% GEQ 45 goto HATA
+  70: goto W
+  71: 
+  72: :OLLAMA_HAZIR
+  73: echo        Ollama hazir.
+  74: 
+  75: echo [3/4] Python venv aktif ediliyor...
+  76: cd /d "%~dp0"
+  77: if exist ".venv\Scripts\activate.bat" (
+  78:     call ".venv\Scripts\activate.bat"
+  79:     echo        .venv aktif.
+  80: ) else if exist "venv\Scripts\activate.bat" (
+  81:     call "venv\Scripts\activate.bat"
+  82:     echo        venv aktif.
+  83: ) else (
+  84:     echo        venv bulunamadi, global python kullanilacak.
+  85: )
+  86: 
+  87: echo [4/4] Flask baslatiliyor...
+  88: python app.py
+  89: 
+  90: pause
+  91: goto :eof
+  92: 
+  93: :HATA
+  94: echo [HATA] Ollama 45 saniyede acilmadi.
+  95: echo        Ollama'yi manuel kontrol edin: %OLLAMA_EXE% serve
+  96: pause
+
+  (96 satir)
+
+======================================================================
+  DB SEMA: linkedin_takip.db
+  C:\AI_YEREL\LiNKEDiN_TAKiP\data\linkedin_takip.db
+======================================================================
+
+TABLO: aday_olaylari
+  id                           INTEGER
+  aday_id                      INTEGER
+  tarih                        TEXT
+  olay_tipi                    TEXT
+  olay_metni                   TEXT
+  kaynak                       TEXT
+  kaynak_kayit_id              INTEGER
+  davet                        INTEGER
+  randevu                      INTEGER
+  plan                         INTEGER
+  kayit                        INTEGER
+  takip                        INTEGER
+  hayir                        INTEGER
+  is_ariyor                    INTEGER
+  durum                        TEXT
+  created_at                   TEXT
+  (kayit: 90)
+
+TABLO: aday_profil
+  id                           INTEGER
+  isim                         TEXT
+  telefon                      TEXT
+  email                        TEXT
+  adres                        TEXT
+  aktif                        INTEGER
+  created_at                   TEXT
+  updated_at                   TEXT
+  durum                        TEXT
+  (kayit: 79)
+
+TABLO: adaylar
+  id                           INTEGER
+  isim                         TEXT
+  tarih                        TEXT
+  aciklama                     TEXT
+  davet                        INTEGER
+  randevu                      INTEGER
+  plan                         INTEGER
+  kayit                        INTEGER
+  takip                        INTEGER
+  hayir                        INTEGER
+  is_ariyor                    INTEGER
+  kaynak_hash                  TEXT
+  linkedin_url                 TEXT
+  randevu_tarihi               TEXT
+  randevu_saati                TEXT
+  blok                         INTEGER
+  blok_tarihi                  TEXT
+  blok_notu                    TEXT
+  (kayit: 76)
+
+======================================================================
+  DB SEMA: sohbet_gecmisi.db
+  C:\AI_YEREL\LiNKEDiN_TAKiP\data\sohbet_gecmisi.db
+======================================================================
+
+TABLO: sohbet_loglari
+  id                           INTEGER
+  rol                          TEXT
+  icerik                       TEXT
+  zaman                        TEXT
+  model                        TEXT
+  fallback                     INTEGER
+  kategori                     TEXT
+  (kayit: 2)
