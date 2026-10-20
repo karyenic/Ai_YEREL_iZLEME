@@ -2833,3 +2833,34 @@ section.panel.print-gizle textarea {
 .durum-sg { background: rgba(46, 160, 67, 0.15) !important; color: #3fb950 !important; border-color: rgba(46, 160, 67, 0.4) !important; }
 .durum-takip { background: rgba(210, 153, 34, 0.15) !important; color: #d29922 !important; border-color: rgba(210, 153, 34, 0.4) !important; }
 .durum-plan { background: rgba(138, 43, 226, 0.15) !important; color: #d8b4fe !important; border-color: rgba(138, 43, 226, 0.4) !important; }
+
+
+/* ============================================================
+   v18.43 ANA KAPSAYICI VE TABLO HIZALAMASI
+   ============================================================ */
+/* Ust navbar iceriklerini ve ana bloklari ortala */
+body > nav, 
+body > main {
+    max-width: 1850px !important; /* Genis ekranlarda asiri yayilmayi onler */
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+}
+
+/* Aday Tablosu Sutun Genisliklerini Sabitle */
+#aday-tablo {
+    table-layout: fixed !important;
+    width: 100% !important;
+}
+
+#aday-tablo th:nth-child(1), #aday-tablo td:nth-child(1) { width: 5% !important; text-align: center !important; } /* ID */
+#aday-tablo th:nth-child(2), #aday-tablo td:nth-child(2) { width: 20% !important; } /* Isim */
+#aday-tablo th:nth-child(3), #aday-tablo td:nth-child(3) { width: 15% !important; } /* Tarih */
+#aday-tablo th:nth-child(4), #aday-tablo td:nth-child(4) { width: 50% !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* Aciklama */
+#aday-tablo th:nth-child(5), #aday-tablo td:nth-child(5) { width: 10% !important; text-align: right !important; } /* Islem */
+
+/* Form elemanlarinin genisligini duzenle */
+#yeni-aday-panel input, 
+#yeni-aday-panel select {
+    max-width: 100% !important;
+}

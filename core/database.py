@@ -351,7 +351,7 @@ def adaylari_getir(bloklular_dahil=False):
             try:
                 if isim:
                     profil = c.execute(
-                        "SELECT durum FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND LOWER(TRIM(isim))=LOWER(TRIM(?))) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
+                        "SELECT durum FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
                         (d.get("id"), isim,)
                     ).fetchone()
                     
@@ -407,7 +407,7 @@ def aday_ekle(
             # Blok kontrolü: aynı isimde bloklu aday varsa atla
             if isim and isim.strip():
                 bloklu = c.execute(
-                    "SELECT id FROM adaylar WHERE LOWER(TRIM(isim))=LOWER(TRIM(?)) AND COALESCE(blok,0)=1 LIMIT 1",
+                    "SELECT id FROM adaylar WHERE 1=0 AND COALESCE(blok,0)=1 LIMIT 1",
                     (isim.strip(),)
                 ).fetchone()
                 if bloklu:
@@ -457,7 +457,7 @@ def aday_ekle(
                 '''
                 SELECT id
                 FROM aday_profil
-                WHERE lower(trim(isim)) = lower(trim(?))
+                WHERE 1=0
                 ORDER BY id ASC
                 LIMIT 1
                 ''',
@@ -555,7 +555,7 @@ def aday_sil(aday_id):
         profil_id = None
         if isim:
             profil_row = c.execute(
-                "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND LOWER(TRIM(isim))=LOWER(TRIM(?))) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
+                "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
                 (aday_id, isim,)
             ).fetchone()
             if profil_row:
@@ -627,22 +627,30 @@ def aday_karti_getir(eski_aday_id):
 
         isim = eski["isim"] or ""
 
-        # 2. Son durum: aday_olaylari'ndan
-        durum_row = c.execute("""
-            SELECT durum FROM aday_olaylari
-            WHERE kaynak_kayit_id = ?
-              AND durum IS NOT NULL
-              AND durum != ''
-            ORDER BY id DESC LIMIT 1
-        """, (eski_aday_id,)).fetchone()
-
-        durum = durum_row["durum"] if durum_row else "⚪ Değerlendirilecek"
-
-        # 3. Profil bilgileri (varsa)
+        # 2. Profil bilgileri (varsa) - v18 Kart Liste Senkron
         profil = c.execute(
             "SELECT * FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
             (eski_aday_id, isim,)
         ).fetchone()
+
+        # 3. Son durum: ONCE PROFILDEN OKU, yoksa OLAYLARA bak
+        durum = "⚪ Değerlendirilecek"
+        
+        # Profil tablosunda durum varsa onu kullan (tek dogruluk kaynagi)
+        if profil and profil["durum"]:
+            durum = profil["durum"]
+        else:
+            # Profilde yoksa olay gecmisinden son durumu bul
+            durum_row = c.execute("""
+                SELECT durum FROM aday_olaylari
+                WHERE kaynak_kayit_id = ?
+                  AND durum IS NOT NULL
+                  AND durum != ''
+                ORDER BY id DESC LIMIT 1
+            """, (eski_aday_id,)).fetchone()
+            
+            if durum_row and durum_row["durum"]:
+                durum = durum_row["durum"]
 
         # 4. Gecmis olaylar
         gecmis = []

@@ -203,16 +203,29 @@ async function adayKartiAc(adayId) {
 
 // v18.39: Statu Kodlarini Gorsel Metne Ceviren Fonksiyon
 function formatStatu(kod) {
-    if (!kod) return { ikon: "🆕", metin: "Yeni", sinif: "" };
-    let k = kod.toLowerCase();
-    if (k === "sicak") return { ikon: "🔥", metin: "Sıcak", sinif: "durum-sicak" };
-    if (k === "aktif") return { ikon: "🟢", metin: "Aktif", sinif: "" };
-    if (k === "deepfreeze") return { ikon: "❄️", metin: "DeepFreeze (Yumuşak Ret)", sinif: "durum-deepfreeze" };
-    if (k === "blok") return { ikon: "🚫", metin: "Bloklu", sinif: "durum-blok" };
-    if (k === "sg") return { ikon: "🤝", metin: "Kayıt Yapıldı", sinif: "durum-sg" };
-    if (k === "takip") return { ikon: "⏳", metin: "Takip Ediliyor", sinif: "durum-takip" };
-    if (k === "plan") return { ikon: "📋", metin: "Plan Sunuldu", sinif: "durum-plan" };
-    return { ikon: "🆕", metin: kod, sinif: "" };
+    if (!kod) return { ikon: "⚪", metin: "Değerlendirilecek", sinif: "" };
+    
+    // Tüm emojileri ve harf dışı karakterleri sil, Türkçe karakterleri İngilizceye çevir
+    let k = String(kod).toLowerCase()
+        .replace(/ı/g, "i")
+        .replace(/İ/g, "i")
+        .replace(/ğ/g, "g")
+        .replace(/ü/g, "u")
+        .replace(/ş/g, "s")
+        .replace(/ö/g, "o")
+        .replace(/ç/g, "c")
+        .replace(/[^a-z0-9]/g, ""); 
+    
+    if (k.includes("sicak")) return { ikon: "🔥", metin: "Sıcak", sinif: "durum-sicak" };
+    if (k.includes("aktif")) return { ikon: "🟢", metin: "Aktif", sinif: "" };
+    if (k.includes("deepfreeze")) return { ikon: "❄️", metin: "DeepFreeze", sinif: "durum-deepfreeze" };
+    if (k.includes("blok") || k.includes("olumsuz")) return { ikon: "🚫", metin: "Bloklu", sinif: "durum-blok" };
+    if (k.includes("sg") || k.includes("kayityapildi")) return { ikon: "🤝", metin: "Kayıt Yapıldı", sinif: "durum-sg" };
+    if (k.includes("takip")) return { ikon: "🔔", metin: "Takip Ediliyor", sinif: "durum-takip" }; // v18 Status Sync Fix
+    if (k.includes("plan")) return { ikon: "📋", metin: "Plan Sunuldu", sinif: "durum-plan" };
+    
+    // Değerlendirilecek veya bilinmeyen her şey için NEW (⚪) DEĞİL, nötr (⚪) kullan
+    return { ikon: "⚪", metin: "Değerlendirilecek", sinif: "" };
 }
 
 function adayKartiDoldur(data) {
@@ -230,12 +243,13 @@ function adayKartiDoldur(data) {
   document.getElementById("kart-adres").value =
     data.adres || "";
 
-  // v18.39: Kart Durumunu Cevirici ile Guncelle
+  // v18.47: Kart Durumunu Cevirici ile Guncelle ve Title'i temizle
   const sObj = formatStatu(data.durum);
   const badgeEl = document.getElementById("kart-durum");
   if (badgeEl) {
       badgeEl.textContent = `${sObj.ikon} ${sObj.metin}`;
       badgeEl.className = `durum-badge ${sObj.sinif}`;
+      badgeEl.title = sObj.metin; // Fareyle uzerine gelince sadece temiz metin gorunsun
   }
 
   // v18.20: Kusursuz Header Hizalama
@@ -2563,7 +2577,7 @@ function aciklamaTemizle(metin) {
   if (!metin) return "";
   let s = String(metin).trim();
 
-  const emojiler = /^(🆕|⚪|🟢|🟡|🔴|🔥|❄️|❄|⚫|🟠|🟨|🟩|🟥|🟧)\s*/u;
+  const emojiler = /^(⚪|⚪|🟢|🟡|🔴|🔥|❄️|❄|⚫|🟠|🟨|🟩|🟥|🟧)\s*/u;
 
   let onceki = "";
   let sayac = 0;
