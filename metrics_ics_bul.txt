@@ -1,0 +1,114 @@
+1: from flask import Blueprint, Response, request, jsonify
+2: import pandas as pd
+3: from datetime import datetime
+4: from core.database import adaylari_getir, tarih_parse
+5: from core.ollama_client import chat_stream
+6: from config import DEFAULT_MODEL, DEFAULT_FALLBACK, CHAT_MODEL  # v17 Metrics 7B Patch
+7: 
+8: bp = Blueprint("metrics", __name__, url_prefix="/api/metrics")
+9: 
+10: 
+11: def _huni_hesapla(adaylar):
+12:     """Kaba listeden kayda kadar GERÇEK huni (bir onceki adima gore %).
+13:     Bu rakamlar LLM'e DOGRU VERI olarak verilir - LLM kendi hesaplamaz,
+14:     hesaplanmis rakami yorumlar (halusinasyonu engeller).
+15: 
+16:     v14: Bloklu adaylar huniden HARIC tutulur (net hayir).
+17:     Cagiran taraf adaylari_getir(bloklular_dahil=True) kullanmali.
+18:     """
+19:     # v14: Bloklu adaylari ayir
+20:     bloklu_sayisi = sum(1 for a in adaylar if int(a.get('blok') or 0))
+21:     adaylar = [a for a in adaylar if not int(a.get('blok') or 0)]
+22: 
+23:     toplam = len(adaylar)
+24: 
+25:     def s(k):
+26:         return sum(int(a.get(k) or 0) for a in adaylar)
+27: 
+28:     def s_kumulatif(*anahtarlar):
+29:         """Aday bu anahtarlardan EN AZ BIRINE sahipse 1 sayar.
+30:         Huni mantigi: bir sonraki adima gecen, onceki adimlari da gecmis sayilir.
+31:         Yapiskan flag sorununu cozer (1 davet + 3 randevu -> %300 bug'i).
+
+--------------------------------------------------
+
+32:         """
+33:         return sum(
+
+--------------------------------------------------
+
+740:     """v17: Akilli Hatirlatma Motoru"""
+741:     from core.database import akilli_hatirlatmalar_getir
+742:     return jsonify(akilli_hatirlatmalar_getir())
+743: 
+744: @bp.route("/son-gelismeler", methods=["GET"])
+745: def son_gelismeler():
+746:     from core.database import son_gelismeler_getir
+747:     return jsonify(son_gelismeler_getir())
+748: 
+749: 
+750: 
+751: 
+752: 
+753: from flask import Response, request
+754: 
+755: @bp.route("/takvim", methods=["GET"])
+756: def takvim_indir():
+757:     """Randevulari .ics (iCalendar) formatinda indirir."""
+758:     import datetime
+759:     from urllib.parse import unquote
+760:     
+761:     isim = unquote(request.args.get("isim", "Aday"))
+762:     tarih_str = request.args.get("tarih", "")
+763:     
+764:     if not tarih_str:
+765:         return "Tarih belirtilmedi", 400
+766: 
+767:     try:
+768:         if "-" in tarih_str:
+769:             _d = datetime.datetime.strptime(tarih_str[:10], "%Y-%m-%d")
+770:         elif "." in tarih_str:
+771:             _d = datetime.datetime.strptime(tarih_str, "%d.%m.%Y")
+772:         else:
+773:             _d = datetime.datetime.now()
+774:     except Exception:
+775:         _d = datetime.datetime.now()
+776: 
+777:     dt_start = _d.strftime("%Y%m%dT090000")
+778:     dt_end = _d.strftime("%Y%m%dT100000")
+779:     
+780:     ics_content = f"""BEGIN:VCALENDAR
+
+--------------------------------------------------
+
+781: VERSION:2.0
+
+--------------------------------------------------
+
+782: PRODID:-//AI_YEREL//LinkedIn Takip Asistani//TR
+
+--------------------------------------------------
+
+783: BEGIN:VEVENT
+784: SUMMARY:Randevu - {isim}
+785: DTSTART:{dt_start}
+786: DTEND:{dt_end}
+787: DESCRIPTION:LinkedIn Takip Asistani uzerinden olusturulan randevu.
+788: STATUS:CONFIRMED
+789: END:VEVENT
+790: END:VCALENDAR"""
+791: 
+792:     return Response(
+793:         ics_content,
+794:         mimetype="text/calendar",
+795:         headers={"Content-Disposition": f"attachment; filename=randevu_{isim.replace(' ', '_')}.ics"}
+796:     )
+
+--------------------------------------------------
+
+
+--------------------------------------------------
+
+
+--------------------------------------------------
+

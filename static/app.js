@@ -200,6 +200,21 @@ async function adayKartiAc(adayId) {
 }
 
 
+
+// v18.39: Statu Kodlarini Gorsel Metne Ceviren Fonksiyon
+function formatStatu(kod) {
+    if (!kod) return { ikon: "🆕", metin: "Yeni", sinif: "" };
+    let k = kod.toLowerCase();
+    if (k === "sicak") return { ikon: "🔥", metin: "Sıcak", sinif: "durum-sicak" };
+    if (k === "aktif") return { ikon: "🟢", metin: "Aktif", sinif: "" };
+    if (k === "deepfreeze") return { ikon: "❄️", metin: "DeepFreeze (Yumuşak Ret)", sinif: "durum-deepfreeze" };
+    if (k === "blok") return { ikon: "🚫", metin: "Bloklu", sinif: "durum-blok" };
+    if (k === "sg") return { ikon: "🤝", metin: "Kayıt Yapıldı", sinif: "durum-sg" };
+    if (k === "takip") return { ikon: "⏳", metin: "Takip Ediliyor", sinif: "durum-takip" };
+    if (k === "plan") return { ikon: "📋", metin: "Plan Sunuldu", sinif: "durum-plan" };
+    return { ikon: "🆕", metin: kod, sinif: "" };
+}
+
 function adayKartiDoldur(data) {
 
   document.getElementById("kart-isim").textContent =
@@ -215,8 +230,51 @@ function adayKartiDoldur(data) {
   document.getElementById("kart-adres").value =
     data.adres || "";
 
-  document.getElementById("kart-durum").textContent =
-    data.durum || "🟢 Aktif";
+  // v18.39: Kart Durumunu Cevirici ile Guncelle
+  const sObj = formatStatu(data.durum);
+  const badgeEl = document.getElementById("kart-durum");
+  if (badgeEl) {
+      badgeEl.textContent = `${sObj.ikon} ${sObj.metin}`;
+      badgeEl.className = `durum-badge ${sObj.sinif}`;
+  }
+
+  // v18.20: Kusursuz Header Hizalama
+  const isimEl = document.getElementById("kart-isim");
+  const durumEl = document.getElementById("kart-durum");
+  const headerContainer = isimEl.closest('.aday-modal-header') || isimEl.parentElement;
+
+  // Eger daha once yapilmadiysa ana satiri olustur
+  if (headerContainer && !document.getElementById("header-flex-wrapper")) {
+      // Eski bosluklari temizle
+      const eskiWrap = headerContainer.querySelector('.isim-durum-wrap');
+      if (eskiWrap) eskiWrap.remove();
+
+      // Yeni Esnek Kapsayici
+      const wrapper = document.createElement("div");
+      wrapper.id = "header-flex-wrapper";
+      wrapper.style.cssText = "display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:10px; flex-wrap:wrap; gap:10px;";
+
+      // Sol Taraf (Durum + Isim)
+      const leftDiv = document.createElement("div");
+      leftDiv.style.cssText = "display:flex; align-items:center; gap:12px;";
+      leftDiv.appendChild(durumEl); // Rozet solda
+      leftDiv.appendChild(isimEl);  // Isim sagda
+
+      wrapper.appendChild(leftDiv);
+      
+      // Randevu Kutusunu (infoDiv) sag tarafa ekle
+      const infoDiv = document.getElementById("kart-randevu-info");
+      if (infoDiv) {
+          wrapper.appendChild(infoDiv);
+      }
+
+      // Kapsayiciyi header'a ekle
+      headerContainer.appendChild(wrapper);
+      
+      // Stil sifirlamalari
+      isimEl.style.margin = "0";
+      durumEl.style.margin = "0";
+  }
 
   adayGecmisiGoster(data.gecmis || []);
 
@@ -233,15 +291,35 @@ function adayKartiDoldur(data) {
       infoDiv = document.createElement("div");
       infoDiv.id = "kart-randevu-info";
       infoDiv.style.cssText = "margin-top: 10px; padding: 8px; background: rgba(56, 139, 253, 0.1); border: 1px solid #388bfd; border-radius: 6px; font-size: 14px; color: #58a6ff; display: none;";
-      const isimEl = document.getElementById("kart-isim");
-      if (isimEl && isimEl.parentNode) {
-          isimEl.parentNode.insertBefore(infoDiv, isimEl.nextSibling);
+      const mainRow = document.getElementById("kart-header-main-row");
+      if (mainRow && infoDiv.parentElement !== mainRow) {
+          // infoDiv'i ana satira (saga) ekle
+          mainRow.appendChild(infoDiv);
+      } else if (!mainRow) {
+          // Eger ana satir yoksa eski yontemle devam et
+          const isimEl = document.getElementById("kart-isim");
+          if (isimEl && isimEl.parentNode) {
+              isimEl.parentNode.insertBefore(infoDiv, isimEl.nextSibling);
+          }
       }
   }
 
   if (rTarih || rSaat) {
-      infoDiv.innerHTML = `📅 <strong>Mevcut Randevu:</strong> ${rTarih} ${rSaat ? "- " + rSaat : ""}`;
-      infoDiv.style.display = "block";
+      let tBtn = "";
+      if (rTarih) {
+          let raw_t = rTarih; let raw_s = rSaat || "09:00";
+          let g_t = raw_t.includes('.') ? raw_t.split('.').reverse().join('') : raw_t.replace(/-/g, '');
+          let u_h = parseInt(raw_s.split(':')[0]) - 3; if (u_h < 0) u_h += 24;
+          let u_m = raw_s.split(':')[1] || '00';
+          let startStr = `${g_t}T${String(u_h).padStart(2,'0')}${u_m}00Z`;
+          let endStr = `${g_t}T${String(u_h + 1 >= 24 ? u_h - 23 : u_h + 1).padStart(2,'0')}${u_m}00Z`;
+          let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Randevu+-+${encodeURIComponent(data.isim || "")}&dates=${startStr}/${endStr}`;
+          tBtn = `<button onclick="takvimIsaretle(${data.aday_id || data.id}, '${url}')" style="background:#238636; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px; margin-left:5px;">📅 Takvime Ekle</button>`;
+      }
+      infoDiv.innerHTML = `📅 <strong>Mevcut Randevu:</strong> ${rTarih} ${rSaat ? "- " + rSaat : ""} ${tBtn} <button onclick="randevuIptalEt(${data.aday_id || data.id})" style="background:#da3633; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px; margin-left:5px;">❌ İptal</button>`;
+      infoDiv.style.display = "flex";
+      infoDiv.style.alignItems = "center";
+      infoDiv.style.gap = "5px";
   } else {
       infoDiv.style.display = "none";
   }
@@ -506,7 +584,14 @@ async function gelismeKaydet() {
           durum,
           // Checkbox'lar (kart gelisme formundan)
           // v11: Randevu tarihi/saati (frontend input -> POST)
-          randevu_tarihi: document.getElementById("gelisme-randevu-tarihi")?.value || "",
+          randevu_tarihi: (() => {
+              let t = document.getElementById("gelisme-randevu-tarihi")?.value || "";
+              // v18 Esnek Tarih Kalkani: GG/AA/YYYY, GG.AA.YYYY veya YYYY-MM-DD
+              t = t.replace(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{5,})/, function(match, p1, p2, p3) {
+                  return p1 + "/" + p2 + "/" + p3.slice(-4); // Yilin son 4 hanesini al
+              });
+              return t;
+          })(),
           randevu_saati: document.getElementById("gelisme-randevu-saati")?.value || "",
           davet: document.getElementById("gelisme-davet")?.checked ? 1 : 0,
           plan: document.getElementById("gelisme-plan")?.checked ? 1 : 0,
@@ -2465,20 +2550,7 @@ function linkedinUrlIzle() {
 
 
 function durumTopp(durum) {
-  if (!durum) return "🆕";
-  const d = String(durum).trim();
-
-  if (d.includes("Yeni") || d.includes("🆕")) return "🆕";
-  if (d.includes("Değerlendirilecek") || d.includes("⚪")) return "⚪";
-  if (d.includes("Sıcak") || d.includes("🔥")) return "🔥";
-  if (d.includes("Aktif") || d.includes("🟢")) return "🟢";
-  if (d.includes("Takip") || d.includes("🔔")) return "🔔";
-  if (d.includes("SG") || d.includes("🎓")) return "🎓";
-  if (d.includes("DeepFreeze") || d.includes("❄")) return "❄️";
-  if (d.includes("Blok") || d.includes("⛔")) return "⛔";
-
-
-  return "🆕";
+    return formatStatu(durum).ikon;
 }
 
 function durumEtiketi(durum) {
@@ -2772,7 +2844,7 @@ async function hatirlatmalariYukle() {
   if (!kutu) return;
 
   try {
-    const r = await fetch("/api/metrics/hatirlatmalar");
+    const r = await fetch('/api/metrics/hatirlatmalar?t=' + Date.now());
     if (!r.ok) return;
     const liste = await r.json();
 
@@ -2791,19 +2863,53 @@ async function hatirlatmalariYukle() {
       const ikon = h.ikon || "������";
       const isim = h.isim ? `<strong style="color:#58a6ff;">${h.isim}</strong> - ` : "";
       
-      // v17 Takvim Butonu
+      // v18 Takvim Butonu ve Durum Rozeti
       let takvimBtn = "";
-      if (h.tarih && h.isim) {
-          const t_str = encodeURIComponent(h.tarih);
+      // v18 Filtre: Sadece randevusu olanlarda (saati olanlarda) buton cikar
+      if (h.tarih && h.isim && h.saat) {
           const i_str = encodeURIComponent(h.isim);
-          // v17 Google Takvim Final
-          const g_tarih = h.tarih.split('.').reverse().join(''); // 25.10.2026 -> 20261025
-          const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Randevu+-+${i_str}&dates=${g_tarih}T090000Z/${g_tarih}T100000Z`;
-          takvimBtn = `
-            <div style="display: flex; gap: 5px; margin-left: 10px;">
-              <a href="${googleUrl}" target="_blank" style="font-size: 12px; background: #238636; padding: 4px 8px; border-radius: 4px; text-decoration: none; color: white; border: 1px solid #30363d;">📅 G.Takvim</a>
-              <a href="/api/metrics/takvim?isim=${i_str}&tarih=${t_str}" style="font-size: 12px; background: #21262d; padding: 4px 8px; border-radius: 4px; text-decoration: none; color: #c9d1d9; border: 1px solid #30363d;" title="Outlook/Apple icin indir">⬇️ .ics</a>
-            </div>`;
+          let raw_tarih = h.tarih;
+          let raw_saat = h.saat || "09:00";
+          if (raw_tarih.includes(' ')) {
+              let parts = raw_tarih.split(' ');
+              raw_tarih = parts[0];
+              raw_saat = parts[1] || raw_saat;
+          }
+          let g_tarih = raw_tarih;
+          if (raw_tarih.includes('.')) {
+              g_tarih = raw_tarih.split('.').reverse().join('');
+          } else if (raw_tarih.includes('-')) {
+              g_tarih = raw_tarih.replace(/-/g, '');
+          }
+          raw_saat = raw_saat.replace('.', ':');
+          let g_hh = raw_saat.split(':')[0] || "09";
+          let g_mm = raw_saat.split(':')[1] || "00";
+          let utc_hh_int = parseInt(g_hh) - 3;
+          if (utc_hh_int < 0) utc_hh_int += 24;
+          let utc_hh = String(utc_hh_int).padStart(2, '0');
+          let end_hh_int = utc_hh_int + 1;
+          if (end_hh_int >= 24) end_hh_int -= 24;
+          let end_hh = String(end_hh_int).padStart(2, '0');
+          
+          let startStr = `${g_tarih}T${utc_hh}${g_mm}00Z`;
+          let endStr = `${g_tarih}T${end_hh}${g_mm}00Z`;
+
+          const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Randevu+-+${i_str}&dates=${startStr}/${endStr}`;
+
+          // Backend'den gelen veriye gore kontrol et
+          const isAdded = (h.takvime_eklendi == 1);
+
+          if (isAdded) {
+              // Takvime eklendiyse YESIL TIK goster
+              takvimBtn = `<div style="margin-left: 10px;"><span style="font-size: 13px; color: #3fb950; font-weight: bold; background: rgba(63, 185, 80, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid #238636;">✅ Takvimde</span></div>`;
+          } else {
+              // Eklenmediyse TURUNCU ve NABIZ ATAN buton goster
+              takvimBtn = `
+                <div class="takvim-bekliyor blink" style="display: flex; gap: 5px; margin-left: 10px;">
+                  <button onclick="takvimIsaretle(${h.aday_id}, '${googleUrl}')" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid #d29922; color: #d29922; background: rgba(210, 153, 34, 0.1); cursor:pointer;">📅 Takvime Ekle</button>
+
+                </div>`;
+          }
       }
 
       return `
@@ -2849,3 +2955,45 @@ async function sonGelismeleriYukle() {
 }
 
 // v17 Hatirlatma Isim Fix
+
+
+// --- v18 Takvim Isaretle ve Iptal Fonksiyonlari ---
+async function takvimIsaretle(adayId, url) {
+    if (!adayId) return;
+    try {
+        const res = await fetch('/api/candidates/takvim-isaretle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({aday_id: adayId})
+        });
+        if (res.ok) {
+            // Hatirlatmalar listesini guncelle
+            if (typeof hatirlatmalariYukle === 'function') {
+                hatirlatmalariYukle(); 
+            }
+            // Eger aday karti aciksa onu da guncelle (sayfa yenilemesi yerine)
+            if (typeof adayKartiKapat === 'function' && document.getElementById('aday-karti')?.style.display !== 'none') {
+                // Kart guncelleme fonksiyonu varsa cagirilabilir, yoksa location.reload()
+                setTimeout(() => location.reload(), 500);
+            }
+            // Takvimi yeni sekmede ac
+            if (url) window.open(url, '_blank');
+        }
+    } catch(e) { console.error("Takvim isaretleme hatasi:", e); }
+}
+
+async function randevuIptalEt(adayId) {
+    if (!adayId) return;
+    if (!confirm("Randevuyu iptal etmek istediginize emin misiniz?")) return;
+    try {
+        const r = await fetch('/api/candidates/randevu-iptal', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({aday_id: adayId})
+        });
+        if (r.ok) {
+            alert("Randevu iptal edildi.");
+            location.reload();
+        }
+    } catch(e) { console.error("Iptal hatasi:", e); }
+}

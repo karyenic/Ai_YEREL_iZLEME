@@ -152,6 +152,8 @@ def init_all():
         _kolon_ekle(c, "aday_olaylari", "durum", "TEXT DEFAULT ''")
         _kolon_ekle(c, "aday_profil", "durum", "TEXT DEFAULT ''")  # v11 D2
         _kolon_ekle(c, "aday_profil", "aday_id", "INTEGER")     # v16 D23
+        _kolon_ekle(c, "aday_profil", "ai_oneri_durum", "TEXT DEFAULT ''")
+        _kolon_ekle(c, "aday_profil", "ai_oneri_not", "TEXT DEFAULT ''")
         _kolon_ekle(c, "adaylar", "blok", "INTEGER DEFAULT 0")
         _kolon_ekle(c, "adaylar", "blok_tarihi", "TEXT")
         _kolon_ekle(c, "adaylar", "blok_notu", "TEXT")
@@ -1087,6 +1089,16 @@ def randevu_hatirlatmalari_getir():
         s = str(s).strip()
         if not s:
             return None
+        # v18 Tarih Kalkani (5+ haneli hatali yillari duzelt)
+        import re
+        if re.match(r'^\d{5,}-\d{2}-\d{2}$', s):
+            s = s[-10:]
+        elif re.match(r'^\d{2}/\d{2}/\d{5,}$', s):
+            p = s.split('/')
+            s = f"{p[0]}/{p[1]}/{p[2][-4:]}"
+        elif re.match(r'^\d{2}\.\d{2}\.\d{5,}$', s):
+            p = s.split('.')
+            s = f"{p[0]}.{p[1]}.{p[2][-4:]}"
         for f in ("%Y-%m-%d", "%d %m %y", "%d.%m.%Y", "%d.%m.%y",
                   "%d/%m/%Y", "%d/%m/%y", "%d %m %Y", "%Y/%m/%d"):
             try:
@@ -1102,7 +1114,7 @@ def randevu_hatirlatmalari_getir():
 
     with _conn(ADAY_DB) as c:
         adaylar = c.execute("""
-            SELECT id, isim, randevu_tarihi, randevu_saati
+            SELECT id, isim, randevu_tarihi, randevu_saati, takvime_eklendi
             FROM adaylar
             WHERE COALESCE(blok,0)=0
               AND COALESCE(hayir,0)=0
@@ -1171,6 +1183,7 @@ def randevu_hatirlatmalari_getir():
                 "metin": metin,
                 "tarih": r_tarih.strftime("%d.%m.%Y"),
                 "saat": r_saat,
+                "takvime_eklendi": a["takvime_eklendi"] if "takvime_eklendi" in a.keys() else 0,
             })
 
     sonuc.sort(key=lambda h: (-h["asama"], h["tarih"]))

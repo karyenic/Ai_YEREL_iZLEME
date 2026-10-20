@@ -2,6 +2,7 @@
 from flask import Blueprint, jsonify, request
 from config import ADAY_DB, OLAY_TIPLERI
 
+from core.ai_intent import analiz_et
 from core.database import (
     aday_durum_otomatik_guncelle,
     adaylari_getir,
@@ -109,8 +110,38 @@ def gelisme_ekle(aday_id):
         "kesinlikle hayır", "kesinlikle hayir",
         "kesin hayır", "kesin hayir",
         "asla", "katiyen", "reddetti",
+        "ilgilenmiyorum", "ilgilenmiyor", "ilgilenmedim",
+        "istemiyorum", "bana uygun değil", "vazgeçtim"
     ]
     net_hayir = 1 if any(k in _metin_erken for k in _net_kelimeler) else 0
+
+    _yumusak_kelimeler = [
+        "düşüneyim", "dusuneyim", "araştırayım", "arastirayim", "belki sonra", "başka zaman",
+        "daha sonra", "şu an müsait değil", "musait degil", "ileride", "değerlendireyim", "bakalım",
+        "çok yoğun", "cok yogun", "yoğun olduğunu", "yogun oldugunu", "meşgul", "mesgul"
+    ]
+    yumusak_hayir = 1 if any(k in _metin_erken for k in _yumusak_kelimeler) and not net_hayir else 0
+
+    # v18.35: Huni (Surec) Adimlarini Olay Tipinden Oner
+    onerilen_huni = ""
+    # v18.38: Metin her zaman Olay Tipinden daha onceliklidir (Kisa Kodlarla)
+    metin_alt = (olay_metni or "").lower()
+    
+    if "kayıt olacağını" in metin_alt or "kayıt oldu" in metin_alt or "kaydoldu" in metin_alt or "kayıt yapıldı" in metin_alt:
+        onerilen_huni = "sg" # Sözleşme/Kayıt Başarılı
+    elif "plan anlattım" in metin_alt or "planı anlattım" in metin_alt or "sunum yaptım" in metin_alt:
+        onerilen_huni = "takip" # Plan yapıldıysa bir sonraki adım takip
+    elif "Kayıt" in olay_tipi:
+        onerilen_huni = "sg"
+    elif "Plan" in olay_tipi or "Sunum" in olay_tipi:
+        onerilen_huni = "takip"
+    elif "Takip" in olay_tipi or "ulaşamadım" in metin_alt:
+        onerilen_huni = "takip"
+    elif "Randevu" in olay_tipi or "Davet" in olay_tipi:
+        onerilen_huni = "aktif"
+
+    if onerilen_huni:
+        durum = onerilen_huni # SQL dogrudan bu statuyu onerecek
 
     # Blok çıkarımı: durum "Blok" içeriyorsa VEYA NET hayir denmisse blok=1
     blok_param = 0
@@ -118,6 +149,11 @@ def gelisme_ekle(aday_id):
         blok_param = 1
     if net_hayir == 1:
         blok_param = 1
+        
+    # v18: SQL Yumusak Hayir -> DeepFreeze
+    if yumusak_hayir == 1 and net_hayir == 0:
+        durum = "DeepFreeze (Yumuşak Ret)"
+        print(f"[SQL] Yumusak hayir tespit edildi. Durum DeepFreeze yapildi.")
 
     ok, msg = aday_gelisme_ekle(
         aday_id, tarih, olay_tipi, olay_metni, durum, blok_param
@@ -125,6 +161,35 @@ def gelisme_ekle(aday_id):
     
     if not ok:
         return jsonify({"ok": False, "error": msg}), 404
+    
+    # ═══════════════════════════════════════════════════════════
+    # v18: AI Intent Analizi (Arka Plan)
+    # ═══════════════════════════════════════════════════════════
+    try:
+        import sqlite3
+        from core.database import _conn, ADAY_DB
+        with _conn(ADAY_DB) as conn:
+            conn.row_factory = sqlite3.Row
+            a = conn.execute("SELECT isim FROM adaylar WHERE id=?", (aday_id,)).fetchone()
+            p = conn.execute("SELECT durum FROM aday_profil WHERE aday_id=?", (aday_id,)).fetchone()
+            
+            isim = a["isim"] if a else "Aday"
+            m_durum = p["durum"] if p else "Değerlendirilecek"
+            
+            # AI'i cagir
+            ai_sonuc = analiz_et(isim, olay_tipi, olay_metni, m_durum)
+            
+            if ai_sonuc and "onerilen_durum" in ai_sonuc:
+                # Veritabanini guncelle
+                conn.execute(
+                    "UPDATE aday_profil SET ai_oneri_durum=?, ai_oneri_not=? WHERE aday_id=?",
+                    (ai_sonuc.get("onerilen_durum"), ai_sonuc.get("ai_not"), aday_id)
+                )
+                conn.commit()
+                print(f"[AI ONERI] {isim} icin: {ai_sonuc.get('onerilen_durum')}")
+    except Exception as e:
+        print(f"[AI TETIKLEME] Hata: {e}")
+    # ═══════════════════════════════════════════════════════════
     
     # ═══════════════════════════════════════════════════════════
     # OLAY TIPINDEN CHECKBOX CIKARIMI
@@ -294,3 +359,34 @@ def blok_kaldir(aday_id):
     if not ok:
         return jsonify({"ok": False, "error": "Aday bulunamadi."}), 404
     return jsonify({"ok": True, "message": "Blok kaldirildi."})
+
+
+
+# --- v18 Takvim ve Randevu API'leri (Blueprint) ---
+from core.database import _conn, ADAY_DB
+
+@bp.route('/takvim-isaretle', methods=['POST'])
+def api_takvim_isaretle():
+    data = request.get_json()
+    aday_id = data.get('aday_id')
+    if not aday_id: return jsonify({"error": "ID yok"}), 400
+    try:
+        with _conn(ADAY_DB) as c:
+            c.execute("UPDATE adaylar SET takvime_eklendi = 1 WHERE id = ?", (aday_id,))
+            c.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/randevu-iptal', methods=['POST'])
+def api_randevu_iptal():
+    data = request.get_json()
+    aday_id = data.get('aday_id')
+    if not aday_id: return jsonify({"error": "ID yok"}), 400
+    try:
+        with _conn(ADAY_DB) as c:
+            c.execute("UPDATE adaylar SET randevu_tarihi = NULL, randevu_saati = NULL, takvime_eklendi = 0 WHERE id = ?", (aday_id,))
+            c.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
