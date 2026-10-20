@@ -574,9 +574,8 @@ Her aday icin:
     "Merhaba X Hanim/Bey, sizi [sebep] dolayisiyla ekibimize dahil etmek istiyoruz. Müsait oldugunuzda kisa bir gorusme planlayabilir miyiz?"
   * GECMIS TEMAS VARSA → samimi takip tonu.
 
-**3. Haftalik Optimal Calisma Plani**
-ONEMLI: Bu bolumu SADECE BIR KEZ yaz. Onceki bolumlerde (1 ve 2) haftalik plan YAZMA.
-Asagidaki GUN TABLOSUNU AYNEN kullan (7 gun zorunlu, atlama):
+**3. Bugünkü Günlük Çalışma Stratejisi (SADECE BUGÜN)**
+ONEMLI: SADECE BUGUN için yapilmasi gereken 3-5 stratejik aksiyon yaz. Haftalik plan, gelecek hafta YASAK.
 {gun_tablosu}
 
 KURALLAR:
@@ -627,8 +626,8 @@ Cevabini SADECE asagidaki JSON formatinda ver. Baska hicbir aciklama, giris veya
   "aday_onerileri": [
     {"isim": "Aday Adi", "durum": "Aday Durumu", "aksiyon": "Tam olarak ne yapilmali"}
   ],
-  "haftalik_plan": [
-    {"gun": "Pazartesi", "tarih": "DD.MM.YYYY", "gorevler": ["Gorev 1", "Gorev 2"]}
+  "bugunku_plan": [
+    {"saat": "Sabah", "aksiyon": "Bugun yapilacak aksiyon"}
   ],
   "gozden_kacanlar": "Gozden kacan firsatlar veya riskler."
 }
@@ -713,7 +712,7 @@ Cevabini SADECE asagidaki JSON formatinda ver. Baska hicbir aciklama, giris veya
                     json_veri["ozet"] = json_veri["huni_durumu"]
                 if "aday_onerileri" in json_veri and "oncelikli_adaylar" not in json_veri:
                     json_veri["oncelikli_adaylar"] = json_veri["aday_onerileri"]
-                if "haftalik_plan" in json_veri and "bugunku_plan" not in json_veri:
+                if "haftalik_plan" in json_veri and "bugunku_plan" not in json_veri: # v18 Guvenli Gunluk Plan
                     # Haftalik plani bugunku plan formatina uyarla
                     json_veri["bugunku_plan"] = []
                     for item in json_veri.get("haftalik_plan", []):
