@@ -20,7 +20,7 @@ Bu gelişmeyi analiz et. Adayla güven inşa etmek ve iş planı sunmak istiyoru
 
 Aşağıdaki kurallara göre sadece JSON çıktısı ver:
 1. "niyet": (Olumlu, Olumsuz, Notr, Randevu_Talebi)
-2. "onerilen_durum": (Sıcak, Aktif, Değerlendirilecek, Olumsuz, Randevu Alındı, Plan Sunuldu, Takip Ediliyor, Kayıt Yapıldı)
+2. "onerilen_durum": (Sıcak, Aktif, Değerlendirilecek, Olumsuz, Takip, Kayıt Yapıldı)
    - "Sıcak": Görüşmeye/randevuya açık (ör: "konuşalım", "neden olmasın")
    - "Randevu Alındı": Net bir randevu tarihi/saati verildi.
    - "Plan Sunuldu": İş planı/zoom toplantısı yapıldı.
@@ -65,3 +65,5 @@ Aşağıdaki kurallara göre sadece JSON çıktısı ver:
         return None
 
 # v19 AI Prompt Fix
+
+# v19 AI Oneri Esleme

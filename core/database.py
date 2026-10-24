@@ -45,7 +45,7 @@ def _profil_id_eski_aday(aday_id):
         # 3. Ayni isimdeki profil kaydini bul
         profil = c.execute(
             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (aday_id, isim,)
+            (eski_aday_id, isim,)
         ).fetchone()
 
         if profil:
@@ -556,7 +556,7 @@ def aday_sil(aday_id):
         if isim:
             profil_row = c.execute(
                 "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-                (aday_id, isim,)
+                (eski_aday_id, isim,)
             ).fetchone()
             if profil_row:
                 profil_id = profil_row["id"]
@@ -630,7 +630,7 @@ def aday_karti_getir(eski_aday_id):
         # 2. Profil bilgileri (varsa) - v18 Kart Liste Senkron
         profil = c.execute(
             "SELECT * FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (aday_id, isim,)
+            (eski_aday_id, isim,)
         ).fetchone()
 
         # 3. Son durum: ONCE PROFILDEN OKU, yoksa OLAYLARA bak
@@ -692,7 +692,10 @@ def aday_karti_getir(eski_aday_id):
             "gecmis": gecmis,
             # v17 Randevu Backend Fix
             "randevu_tarihi": _get(eski, "randevu_tarihi", ""),
-            "randevu_saati": _get(eski, "randevu_saati", "")
+            "randevu_saati": _get(eski, "randevu_saati", ""),
+            # v19 AI Oneri
+            "ai_oneri_durum": _get(profil, "ai_oneri_durum", ""),
+            "ai_oneri_not": _get(profil, "ai_oneri_not", "")
         }
 
 def aday_profil_guncelle(aday_id, telefon, email, adres):
@@ -713,7 +716,7 @@ def aday_profil_guncelle(aday_id, telefon, email, adres):
         # 2. Bu isimde profil var mi?
         profil = c.execute(
             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (aday_id, isim,)
+            (eski_aday_id, isim,)
         ).fetchone()
 
         if profil:
@@ -807,7 +810,7 @@ def aday_gelisme_ekle(
                     if isim:
                         profil = c.execute(
                             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-                            (aday_id, isim,)
+                            (eski_aday_id, isim,)
                         ).fetchone()
 
                         if profil:
@@ -822,7 +825,7 @@ def aday_gelisme_ekle(
                         else:
                             c.execute(
                                 "INSERT INTO aday_profil (isim, telefon, email, adres, durum, aktif, created_at, updated_at, aday_id) VALUES (?, '', '', '', ?, 1, ?, ?, ?)",
-                                (isim, durum, now, now, aday_id)
+                                (isim, durum, now, now, eski_aday_id)
                             )
             except Exception as e:
                 print(f"Durum guncelleme hatasi: {e}")
@@ -1021,7 +1024,7 @@ def aday_durum_otomatik_guncelle(aday_id, davet=0, plan=0, kayit=0, hayir=0, net
 
         profil = c.execute(
             "SELECT id, durum FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (aday_id, isim,)
+            (eski_aday_id, isim,)
         ).fetchone()
 
         # Zaten ayni statude ise bosuna yazma
@@ -1328,3 +1331,7 @@ def son_gelismeler_getir():
 # v19 Aday Ekleme Son Fix
 
 # v19 Aday Ekleme Nihai Fix
+
+# v19 Kart Acma Fix
+
+# v19 AI Panel ve Statu Fix

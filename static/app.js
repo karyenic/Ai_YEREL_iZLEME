@@ -229,6 +229,27 @@ function formatStatu(kod) {
 }
 
 function adayKartiDoldur(data) {
+  // v19 AI Panel Baslangic
+  let aiPanel = document.getElementById("kart-ai-oneri");
+  if (!aiPanel) {
+      aiPanel = document.createElement("div");
+      aiPanel.id = "kart-ai-oneri";
+      aiPanel.style.cssText = "margin-top: 10px; padding: 10px; background: rgba(137, 87, 229, 0.1); border: 1px solid #8957e5; border-radius: 6px; font-size: 14px; color: #c9d1d9; display: none;";
+      const isimEl = document.getElementById("kart-isim");
+      if (isimEl && isimEl.parentNode) {
+          isimEl.parentNode.insertBefore(aiPanel, isimEl.nextSibling);
+      }
+  }
+  
+  if (data.ai_oneri_durum) {
+      aiPanel.innerHTML = `🤖 <strong style="color:#a371f7;">AI Önerisi:</strong> ${data.ai_oneri_durum}<br><span style="color:#8b949e; font-size:13px;">${data.ai_oneri_not || ""}</span>
+      <button onclick="aiOneriOnayla(${data.id}, '${data.ai_oneri_durum}')" style="margin-left:10px; background:#8957e5; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">Onayla</button>`;
+      aiPanel.style.display = "block";
+  } else {
+      aiPanel.style.display = "none";
+  }
+  // v19 AI Panel Bitis
+
 
   document.getElementById("kart-isim").textContent =
     data.isim || "Aday";
@@ -3011,3 +3032,22 @@ async function randevuIptalEt(adayId) {
         }
     } catch(e) { console.error("Iptal hatasi:", e); }
 }
+
+async function aiOneriOnayla(adayId, yeniDurum) {
+    if (!confirm(`AI önerisi: "${yeniDurum}" statüsüne geçirilsin mi?`)) return;
+    try {
+        const r = await fetch(`/api/candidates/${adayId}/otomatik-durum`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({durum: yeniDurum})
+        });
+        if (r.ok) {
+            alert("Statü güncellendi!");
+            location.reload();
+        } else {
+            alert("Hata oluştu.");
+        }
+    } catch(e) { console.error(e); }
+}
+
+// v19 AI Panel

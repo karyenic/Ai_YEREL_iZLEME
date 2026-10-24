@@ -332,6 +332,35 @@ def linkedin_guncelle(aday_id):
 def otomatik_durum(aday_id):
     """Checkbox'lara gore statuyu otomatik gunceller."""
     d = request.get_json() or {}
+
+    # v19 AI Onay Fix
+    if "durum" in d and d["durum"]:
+        try:
+            from core.database import _conn, ADAY_DB
+            durum_str = d["durum"]
+            
+            # AI Onerilerini Sistem Statülerine Esle
+            if "Randevu" in durum_str or "Plan" in durum_str or "Sıcak" in durum_str:
+                durum_str = "🔥 Sıcak"
+            elif "Takip" in durum_str:
+                durum_str = "🔔 Takip"
+            elif "Kayıt" in durum_str or "SG" in durum_str:
+                durum_str = "🎓 SG"
+            elif "Olumsuz" in durum_str:
+                durum_str = "⛔ Blok"
+            elif "Değerlendirilecek" in durum_str:
+                durum_str = "⚪ Değerlendirilecek"
+            elif "Aktif" in durum_str:
+                durum_str = "🟢 Aktif"
+            else:
+                durum_str = "🟢 Aktif"
+
+            with _conn(ADAY_DB) as c:
+                c.execute("UPDATE aday_profil SET durum = ?, ai_oneri_durum = NULL, ai_oneri_not = NULL WHERE aday_id = ?", (durum_str, aday_id))
+                c.commit()
+            return jsonify({"ok": True, "degisti": True, "yeni_durum": durum_str})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500
     
     degisti = aday_durum_otomatik_guncelle(
         aday_id,
