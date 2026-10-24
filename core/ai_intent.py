@@ -16,6 +16,8 @@ Olay Tipi: {olay_tipi}
 Not/Mesaj: "{olay_metni}"
 
 Bu gelişmeyi analiz et. Adayla güven inşa etmek ve iş planı sunmak istiyoruz. 
+ÖNEMLİ KURAL: Adayın mevcut durumunu ASLA düşürme! Eğer aday şu an "Sıcak", "Aktif", "Randevu Alındı", "Plan Sunuldu", "Takip Ediliyor" veya "Kayıt Yapıldı" statüsündeyse, bu statüyü korumalısın veya daha ileri bir statüye yükseltmelisin. "Değerlendirilecek" veya "Aktif" statüsüne düşüremezsin (net bir olumsuz ret olmadıkça).
+
 Aşağıdaki kurallara göre sadece JSON çıktısı ver:
 1. "niyet": (Olumlu, Olumsuz, Notr, Randevu_Talebi)
 2. "onerilen_durum": (Sıcak, Aktif, Değerlendirilecek, Olumsuz, Randevu Alındı, Plan Sunuldu, Takip Ediliyor, Kayıt Yapıldı)
@@ -61,3 +63,5 @@ Aşağıdaki kurallara göre sadece JSON çıktısı ver:
     except Exception as e:
         print(f"[AI INTENT] Hata: {e}")
         return None
+
+# v19 AI Prompt Fix

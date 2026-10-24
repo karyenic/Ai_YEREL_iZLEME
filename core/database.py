@@ -45,7 +45,7 @@ def _profil_id_eski_aday(aday_id):
         # 3. Ayni isimdeki profil kaydini bul
         profil = c.execute(
             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (locals().get('aday_id', locals().get('eski_aday_id')), isim,)
+            (aday_id, isim,)
         ).fetchone()
 
         if profil:
@@ -210,7 +210,7 @@ def init_all():
                     (isim, telefon, email, adres, durum, aktif, created_at, updated_at, aday_id)
                     VALUES (?, '', '', '', ?, 1, ?, ?, ?)
                     ''',
-                    (isim.strip(), "🆕 Yeni", now, now, locals().get('aday_id', locals().get('eski_aday_id')))
+                    (isim.strip(), "🆕 Yeni", now, now, aday_id)
                 )
                 profil_id = cur.lastrowid
             else:
@@ -370,7 +370,7 @@ def adaylari_getir(bloklular_dahil=False):
                     WHERE kaynak_kayit_id = ?
                       AND olay_metni IS NOT NULL
                       AND olay_metni != ''
-                    ORDER BY tarih DESC, id DESC
+                    ORDER BY id DESC  -- v19 Kronoloji Fix
                     LIMIT 1
                     """,
                     (r["id"],)
@@ -407,7 +407,7 @@ def aday_ekle(
             # Blok kontrolü: aynı isimde bloklu aday varsa atla
             if isim and isim.strip():
                 bloklu = c.execute(
-                    "SELECT id FROM adaylar WHERE 1=0 AND COALESCE(blok,0)=1 LIMIT 1",
+                    "SELECT id FROM adaylar WHERE lower(trim(isim)) = lower(trim(?)) AND COALESCE(blok,0)=1 LIMIT 1",
                     (isim.strip(),)
                 ).fetchone()
                 if bloklu:
@@ -457,7 +457,7 @@ def aday_ekle(
                 '''
                 SELECT id
                 FROM aday_profil
-                WHERE 1=0
+                WHERE lower(trim(isim)) = lower(trim(?))
                 ORDER BY id ASC
                 LIMIT 1
                 ''',
@@ -471,7 +471,7 @@ def aday_ekle(
                     (isim, telefon, email, adres, durum, aktif, created_at, updated_at, aday_id)
                     VALUES (?, '', '', '', ?, 1, ?, ?, ?)
                     ''',
-                    (isim.strip(), durum or "🆕 Yeni", now, now, locals().get('aday_id', locals().get('eski_aday_id')))
+                    (isim.strip(), durum or "🆕 Yeni", now, now, eski_id)
                 )
                 profil_id = cur.lastrowid
             else:
@@ -630,7 +630,7 @@ def aday_karti_getir(eski_aday_id):
         # 2. Profil bilgileri (varsa) - v18 Kart Liste Senkron
         profil = c.execute(
             "SELECT * FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (eski_aday_id, isim,)
+            (aday_id, isim,)
         ).fetchone()
 
         # 3. Son durum: ONCE PROFILDEN OKU, yoksa OLAYLARA bak
@@ -659,7 +659,7 @@ def aday_karti_getir(eski_aday_id):
                 SELECT tarih, olay_tipi, olay_metni, durum
                 FROM aday_olaylari
                 WHERE kaynak_kayit_id = ?
-                ORDER BY tarih DESC, id DESC
+                ORDER BY id DESC  -- v19 Kronoloji Fix
                 LIMIT 50
             """, (eski_aday_id,)).fetchall()
             gecmis = [dict(r) for r in gecmis_rows]
@@ -713,7 +713,7 @@ def aday_profil_guncelle(aday_id, telefon, email, adres):
         # 2. Bu isimde profil var mi?
         profil = c.execute(
             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (locals().get('aday_id', locals().get('eski_aday_id')), isim,)
+            (aday_id, isim,)
         ).fetchone()
 
         if profil:
@@ -734,7 +734,7 @@ def aday_profil_guncelle(aday_id, telefon, email, adres):
                 (isim, telefon, email, adres, aktif, created_at, updated_at, aday_id)
                 VALUES (?, ?, ?, ?, 1, ?, ?, ?)
                 """,
-                (isim, telefon, email, adres, now, now, locals().get('aday_id', locals().get('eski_aday_id')))
+                (isim, telefon, email, adres, now, now, aday_id)
             )
 
         c.commit()
@@ -807,7 +807,7 @@ def aday_gelisme_ekle(
                     if isim:
                         profil = c.execute(
                             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-                            (locals().get('aday_id', locals().get('eski_aday_id')), isim,)
+                            (aday_id, isim,)
                         ).fetchone()
 
                         if profil:
@@ -822,7 +822,7 @@ def aday_gelisme_ekle(
                         else:
                             c.execute(
                                 "INSERT INTO aday_profil (isim, telefon, email, adres, durum, aktif, created_at, updated_at, aday_id) VALUES (?, '', '', '', ?, 1, ?, ?, ?)",
-                                (isim, durum, now, now, locals().get('aday_id', locals().get('eski_aday_id')))
+                                (isim, durum, now, now, aday_id)
                             )
             except Exception as e:
                 print(f"Durum guncelleme hatasi: {e}")
@@ -1021,7 +1021,7 @@ def aday_durum_otomatik_guncelle(aday_id, davet=0, plan=0, kayit=0, hayir=0, net
 
         profil = c.execute(
             "SELECT id, durum FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (eski_aday_id, isim,)
+            (aday_id, isim,)
         ).fetchone()
 
         # Zaten ayni statude ise bosuna yazma
@@ -1040,7 +1040,7 @@ def aday_durum_otomatik_guncelle(aday_id, davet=0, plan=0, kayit=0, hayir=0, net
                 (isim, telefon, email, adres, durum, aktif, created_at, updated_at, aday_id)
                 VALUES (?, '', '', '', ?, 1, ?, ?, ?)
                 """,
-                (isim, yeni_durum, now, now, locals().get('aday_id', locals().get('eski_aday_id')))
+                (isim, yeni_durum, now, now, aday_id)
             )
         # v11: NET hayir ise blok=1 set et
         if hedef_blok == 1:
@@ -1097,6 +1097,9 @@ def randevu_hatirlatmalari_getir():
         s = str(s).strip()
         if not s:
             return None
+        # v19 Randevu Tarih Fix: Eger saat bilgisi varsa sadece tarih kismini al
+        if ' ' in s or 'T' in s:
+            s = s.split(' ')[0].split('T')[0]
         # v18 Tarih Kalkani (5+ haneli hatali yillari duzelt)
         import re
         if re.match(r'^\d{5,}-\d{2}-\d{2}$', s):
@@ -1317,3 +1320,11 @@ def son_gelismeler_getir():
     except Exception as e:
         print(f"Son gelismeler hatasi: {e}")
         return []
+
+# v19 Eski Aday ID Temizlendi
+
+# v19 Randevu Tarih Fix
+
+# v19 Aday Ekleme Son Fix
+
+# v19 Aday Ekleme Nihai Fix
