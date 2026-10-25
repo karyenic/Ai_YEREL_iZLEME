@@ -213,7 +213,8 @@ def import_route():
             0, 0, 0, 0, 0, 0,
             1,
             kaynak_hash=h,
-            linkedin_url=a["linkedin_url"]
+            linkedin_url=a["linkedin_url"],
+            durum=a["durum"]
         )
         if ok:
             eklenen += 1

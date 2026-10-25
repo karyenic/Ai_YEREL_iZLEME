@@ -9,7 +9,7 @@ from watchdog.events import FileSystemEventHandler
 from routes.system import bp as system_bp
 
 from config import (FLASK_HOST, FLASK_PORT, FLASK_DEBUG,
-                    IZLENEN_EXCEL, DATA_DIR, DEFAULT_MODEL)
+                    IZLENEN_EXCEL, DATA_DIR, DEFAULT_MODEL, CHAT_MODEL)
 from core import database, ollama_client
 from core.excel_io import excel_ice_aktar
 

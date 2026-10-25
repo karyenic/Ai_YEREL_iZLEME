@@ -142,7 +142,7 @@ async function adayEkle() {
   const sonuc = await r.json();
 
   if (!sonuc.ok) {
-    alert("Aday eklenemedi.");
+    alert(sonuc.error || "Aday eklenemedi.");
     return;
   }
 
@@ -2886,7 +2886,7 @@ async function hatirlatmalariYukle() {
     if (!Array.isArray(liste) || liste.length === 0) {
       kutu.innerHTML = `
         <div class="report-empty">
-          <div class="report-empty-icon">í ½í´”</div>
+          <div class="report-empty-icon">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</div>
           <strong>Åžimdilik kayÄ±tlÄ± hatÄ±rlatma yok.</strong>
           <span>YaklaÅŸan randevular burada gÃ¶rÃ¼necek.</span>
         </div>`;
@@ -2895,7 +2895,7 @@ async function hatirlatmalariYukle() {
 
     kutu.innerHTML = liste.map(h => {
       const guvenli = String(h.metin || "").replace(/</g, "&lt;");
-      const ikon = h.ikon || "í ½í´”";
+      const ikon = h.ikon || "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½";
       const isim = h.isim ? `<strong style="color:#58a6ff;">${h.isim}</strong> - ` : "";
       
       // v18 Takvim Butonu ve Durum Rozeti

@@ -45,7 +45,7 @@ def _profil_id_eski_aday(aday_id):
         # 3. Ayni isimdeki profil kaydini bul
         profil = c.execute(
             "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (eski_aday_id, isim,)
+            (aday_id, isim,)
         ).fetchone()
 
         if profil:
@@ -91,6 +91,13 @@ def init_all():
     # Eski aday tablosu - mevcut Excel/AI sistemi korunuyor.
     # --------------------------------------------------------
     with _conn(ADAY_DB) as c:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS silinen_hashler (
+                kaynak_hash TEXT PRIMARY KEY,
+                silinme_tarihi TEXT
+            )
+        ''')
+
         c.execute('''CREATE TABLE IF NOT EXISTS adaylar (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             isim TEXT,
@@ -157,6 +164,7 @@ def init_all():
         _kolon_ekle(c, "adaylar", "blok", "INTEGER DEFAULT 0")
         _kolon_ekle(c, "adaylar", "blok_tarihi", "TEXT")
         _kolon_ekle(c, "adaylar", "blok_notu", "TEXT")
+        _kolon_ekle(c, "adaylar", "kaynak_hash", "TEXT")
         _kolon_ekle(c, "adaylar", "linkedin_url", "TEXT")
         _kolon_ekle(c, "adaylar", "randevu_tarihi", "TEXT")
         _kolon_ekle(c, "adaylar", "randevu_saati", "TEXT")
@@ -194,11 +202,11 @@ def init_all():
                 '''
                 SELECT id
                 FROM aday_profil
-                WHERE lower(trim(isim)) = lower(trim(?))
-                ORDER BY id ASC
+                WHERE aday_id=? OR (aday_id IS NULL AND lower(trim(isim)) = lower(trim(?)))
+                ORDER BY (aday_id IS NULL), id ASC
                 LIMIT 1
                 ''',
-                (isim,)
+                (eski["id"], isim)
             ).fetchone()
 
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -210,11 +218,15 @@ def init_all():
                     (isim, telefon, email, adres, durum, aktif, created_at, updated_at, aday_id)
                     VALUES (?, '', '', '', ?, 1, ?, ?, ?)
                     ''',
-                    (isim.strip(), "🆕 Yeni", now, now, aday_id)
+                    (isim.strip(), "🆕 Yeni", now, now, eski["id"])
                 )
                 profil_id = cur.lastrowid
             else:
                 profil_id = profil["id"]
+                c.execute(
+                    "UPDATE aday_profil SET aday_id=?, updated_at=? WHERE id=? AND aday_id IS NULL",
+                    (eski["id"], now, profil_id)
+                )
 
             mevcut_olay = c.execute(
                 '''
@@ -414,6 +426,33 @@ def aday_ekle(
                     print(f"[BLOK] '{isim}' bloklu listede, atlandi (id={bloklu['id']})")
                     return False
 
+            # Tekrar korumasi: eski DB semasinda UNIQUE kisiti bulunmasa da calisir.
+            if kaynak_hash:
+                silinmis = c.execute(
+                    "SELECT 1 FROM silinen_hashler WHERE kaynak_hash=? LIMIT 1",
+                    (kaynak_hash,)
+                ).fetchone()
+                if silinmis:
+                    print("[SILINEN HASH] Kayit yeniden eklenmedi.")
+                    return False
+
+                mevcut_hash = c.execute(
+                    "SELECT id FROM adaylar WHERE kaynak_hash=? LIMIT 1",
+                    (kaynak_hash,)
+                ).fetchone()
+                if mevcut_hash:
+                    print("[MUKERRER HASH] Kayit zaten mevcut.")
+                    return False
+
+            if linkedin_url:
+                mevcut_url = c.execute(
+                    "SELECT id FROM adaylar WHERE lower(rtrim(trim(COALESCE(linkedin_url, '')), '/')) = lower(rtrim(trim(?), '/')) LIMIT 1",
+                    (linkedin_url,)
+                ).fetchone()
+                if mevcut_url:
+                    print("[MUKERRER URL] LinkedIn adresi zaten kayitli.")
+                    return False
+
             c.execute(
                 '''
                 INSERT INTO adaylar
@@ -457,11 +496,11 @@ def aday_ekle(
                 '''
                 SELECT id
                 FROM aday_profil
-                WHERE lower(trim(isim)) = lower(trim(?))
-                ORDER BY id ASC
+                WHERE aday_id=? OR (aday_id IS NULL AND lower(trim(isim)) = lower(trim(?)))
+                ORDER BY (aday_id IS NULL), id ASC
                 LIMIT 1
                 ''',
-                (isim.strip(),)
+                (eski_id, isim.strip())
             ).fetchone()
 
             if profil is None:
@@ -476,6 +515,10 @@ def aday_ekle(
                 profil_id = cur.lastrowid
             else:
                 profil_id = profil["id"]
+                c.execute(
+                    "UPDATE aday_profil SET aday_id=?, updated_at=? WHERE id=? AND aday_id IS NULL",
+                    (eski_id, now, profil_id)
+                )
 
             c.execute(
                 '''
@@ -525,7 +568,9 @@ def aday_ekle(
         return False
 
     except Exception as e:
+        import traceback
         print(f"Aday ekleme hatası: {e}")
+        traceback.print_exc()
         return False
 
 def aday_sil(aday_id):
@@ -556,7 +601,7 @@ def aday_sil(aday_id):
         if isim:
             profil_row = c.execute(
                 "SELECT id FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-                (eski_aday_id, isim,)
+                (aday_id, isim,)
             ).fetchone()
             if profil_row:
                 profil_id = profil_row["id"]

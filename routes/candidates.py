@@ -45,7 +45,10 @@ def ekle():
         durum=d.get("durum", "")
     )
 
-    return jsonify({"ok": ok})
+    return jsonify({
+        "ok": ok,
+        "error": None if ok else "Aday eklenmedi. Ayni LinkedIn adresi/kaynak hash zaten kayitli, aday bloklu veya kayit sirasinda hata olustu. Ayrinti icin Flask konsolunu kontrol edin."
+    })
 
 @bp.route("/<int:aday_id>", methods=["GET"])
 def kart(aday_id):
