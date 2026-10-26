@@ -759,6 +759,7 @@ def takvim_indir():
     
     isim = unquote(request.args.get("isim", "Aday"))
     tarih_str = request.args.get("tarih", "")
+    saat_str = request.args.get("saat", "")  # v19 Takvim Saat
     
     if not tarih_str:
         return "Tarih belirtilmedi", 400
@@ -773,8 +774,20 @@ def takvim_indir():
     except Exception:
         _d = datetime.datetime.now()
 
-    dt_start = _d.strftime("%Y%m%dT090000")
-    dt_end = _d.strftime("%Y%m%dT100000")
+    # v19 Takvim Saat Fix
+    saat_h, saat_m = 9, 0
+    if saat_str:
+        try:
+            parts = saat_str.strip().split(":")
+            if len(parts) >= 2:
+                saat_h = int(parts[0])
+                saat_m = int(parts[1])
+        except Exception:
+            pass
+    _d = _d.replace(hour=saat_h, minute=saat_m)
+
+    dt_start = _d.strftime("%Y%m%dT%H%M00")
+    dt_end = (_d + datetime.timedelta(hours=1)).strftime("%Y%m%dT%H%M00")
     
     ics_content = f"""BEGIN:VCALENDAR
 VERSION:2.0

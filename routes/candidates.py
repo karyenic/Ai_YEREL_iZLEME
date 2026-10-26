@@ -140,8 +140,12 @@ def gelisme_ekle(aday_id):
         onerilen_huni = "takip"
     elif "Takip" in olay_tipi or "ulaşamadım" in metin_alt:
         onerilen_huni = "takip"
-    elif "Randevu" in olay_tipi or "Davet" in olay_tipi:
-        onerilen_huni = "aktif"
+    elif "Randevu" in olay_tipi or "Davet" in olay_tipi:  # v19 Davet Not Fix
+        _ilerleme = ["plan", "sunum", "randevu", "toplantı", "toplanti", "zoom", "görüşme", "gorusme"]
+        if any(k in metin_alt for k in _ilerleme) or randevu_tarihi or randevu_saati:
+            onerilen_huni = "sicak"
+        else:
+            onerilen_huni = "aktif"
 
     if onerilen_huni:
         durum = onerilen_huni # SQL dogrudan bu statuyu onerecek
@@ -230,6 +234,9 @@ def gelisme_ekle(aday_id):
             break
     
     # METINDEN (ikincil - fallback) — kullanicinin serbest metnine gore
+    # v19 Plan Bayrak Fix: "plan" gecen her metinde plan=1 yap
+    if "plan" in metin or "sunum" in metin:
+        plan = 1
     if "plan anlatıldı" in metin or "plan anlatildi" in metin:
         plan = 1
     if "kayıt yapıldı" in metin or "kayit yapildi" in metin or "kayıt oldu" in metin or "kayit oldu" in metin:
@@ -422,3 +429,5 @@ def api_randevu_iptal():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# v19 Plan Bayrak Fix

@@ -358,19 +358,27 @@ def adaylari_getir(bloklular_dahil=False):
             d = dict(r)
             isim = (d.get("isim") or "").strip()
 
-            # Durum: aday_profil'DAN (kart ile ayni kaynak)
+            # v19 Liste Durum Fix: once son olaya bak, yoksa profile bak
             durum = "Değerlendirilecek"
             try:
-                if isim:
+                durum_row = c.execute(
+                    """SELECT durum FROM aday_olaylari
+                       WHERE kaynak_kayit_id = ?
+                         AND durum IS NOT NULL
+                         AND durum != ''
+                       ORDER BY id DESC LIMIT 1""",
+                    (r["id"],)
+                ).fetchone()
+
+                if durum_row and durum_row["durum"]:
+                    durum = durum_row["durum"]
+                elif isim:
                     profil = c.execute(
                         "SELECT durum FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
                         (d.get("id"), isim,)
                     ).fetchone()
-                    
                     if profil and profil["durum"]:
                         durum = profil["durum"]
-                    else:
-                        durum = "Değerlendirilecek"
             except Exception:
                 durum = "Değerlendirilecek"
 
@@ -678,24 +686,22 @@ def aday_karti_getir(eski_aday_id):
             (eski_aday_id, isim,)
         ).fetchone()
 
-        # 3. Son durum: ONCE PROFILDEN OKU, yoksa OLAYLARA bak
+        # 3. Son durum: ONCE SON OLAYA BAK, yoksa profile bak (v19 Son Duzeltmeler)
         durum = "⚪ Değerlendirilecek"
         
-        # Profil tablosunda durum varsa onu kullan (tek dogruluk kaynagi)
-        if profil and profil["durum"]:
+        # Son olaydaki durum
+        durum_row = c.execute("""
+            SELECT durum FROM aday_olaylari
+            WHERE kaynak_kayit_id = ?
+              AND durum IS NOT NULL
+              AND durum != ''
+            ORDER BY id DESC LIMIT 1
+        """, (eski_aday_id,)).fetchone()
+        
+        if durum_row and durum_row["durum"]:
+            durum = durum_row["durum"]
+        elif profil and profil["durum"]:
             durum = profil["durum"]
-        else:
-            # Profilde yoksa olay gecmisinden son durumu bul
-            durum_row = c.execute("""
-                SELECT durum FROM aday_olaylari
-                WHERE kaynak_kayit_id = ?
-                  AND durum IS NOT NULL
-                  AND durum != ''
-                ORDER BY id DESC LIMIT 1
-            """, (eski_aday_id,)).fetchone()
-            
-            if durum_row and durum_row["durum"]:
-                durum = durum_row["durum"]
 
         # 4. Gecmis olaylar
         gecmis = []
@@ -1069,7 +1075,7 @@ def aday_durum_otomatik_guncelle(aday_id, davet=0, plan=0, kayit=0, hayir=0, net
 
         profil = c.execute(
             "SELECT id, durum FROM aday_profil WHERE aday_id=? OR (aday_id IS NULL AND isim=?) ORDER BY (aday_id IS NULL), id ASC LIMIT 1",
-            (eski_aday_id, isim,)
+            (aday_id, isim,)
         ).fetchone()
 
         # Zaten ayni statude ise bosuna yazma
@@ -1201,9 +1207,12 @@ def randevu_hatirlatmalari_getir():
             for o in olaylar:
                 o_t = _tarih_parse(o["tarih"])
                 o_tip = (o["olay_tipi"] or "").strip()
-                if o_t and o_t > r_tarih and o_tip in KAPANIS_TIPLERI:
-                    kayit_girildi = True
-                    break
+                # v19 Esnek Kapanis Kontrolu
+                _esnek_tipler = ("plan", "kayit", "hayir", "takip", "sadece_durum")
+                if o_t and o_t >= r_tarih:  # v19 Son Duzeltmeler: ayni gun olaylari da kapanis say
+                    if any(k in o_tip.lower() for k in _esnek_tipler):
+                        kayit_girildi = True
+                        break
 
             if kayit_girildi:
                 continue
@@ -1380,3 +1389,9 @@ def son_gelismeler_getir():
 # v19 Kart Acma Fix
 
 # v19 AI Panel ve Statu Fix
+
+# v19 Esnek Kapanis Kontrolu
+
+# v19 Son Duzeltmeler
+
+# v19 Eski Aday ID Nihai Fix

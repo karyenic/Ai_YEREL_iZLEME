@@ -2936,12 +2936,13 @@ async function hatirlatmalariYukle() {
 
           if (isAdded) {
               // Takvime eklendiyse YESIL TIK goster
-              takvimBtn = `<div style="margin-left: 10px;"><span style="font-size: 13px; color: #3fb950; font-weight: bold; background: rgba(63, 185, 80, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid #238636;">✅ Takvimde</span></div>`;
+              takvimBtn = `<div style="margin-left: 10px; display: flex; align-items: center; gap: 8px;"><span style="font-size: 13px; color: #3fb950; font-weight: bold; background: rgba(63, 185, 80, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid #238636;">✅ Takvimde</span><a href="/api/metrics/takvim?isim=${i_str}&tarih=${encodeURIComponent(raw_tarih)}&saat=${encodeURIComponent(raw_saat)}" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid #30363d; color: #c9d1d9; background: #21262d; text-decoration: none;">⬇️ .ics</a></div>`;
           } else {
               // Eklenmediyse TURUNCU ve NABIZ ATAN buton goster
               takvimBtn = `
                 <div class="takvim-bekliyor blink" style="display: flex; gap: 5px; margin-left: 10px;">
                   <button onclick="takvimIsaretle(${h.aday_id}, '${googleUrl}')" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid #d29922; color: #d29922; background: rgba(210, 153, 34, 0.1); cursor:pointer;">📅 Takvime Ekle</button>
+                  <a href="/api/metrics/takvim?isim=${i_str}&tarih=${encodeURIComponent(raw_tarih)}&saat=${encodeURIComponent(raw_saat)}" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid #30363d; color: #c9d1d9; background: #21262d; text-decoration: none; margin-left: 4px;">⬇️ .ics</a>
 
                 </div>`;
           }
@@ -3051,3 +3052,5 @@ async function aiOneriOnayla(adayId, yeniDurum) {
 }
 
 // v19 AI Panel
+
+// v19 ics her durumda
